@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ASP – Parking Owner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #FFD400;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .phone {
+      width: 340px;
+      height: 680px;
+      background: #FFD400;
+      border-radius: 30px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+      padding: 20px;
+      position: relative;
+    }
+
+    h2 {
+      margin: 10px 0;
+    }
+
+    .card {
+      background: #FFC800;
+      border-radius: 18px;
+      padding: 20px;
+      margin-top: 10px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+    }
+
+    #map {
+      width: 100%;
+      height: 160px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .asp {
+      position: absolute;
+      bottom: 15px;
+      width: 100%;
+      text-align: center;
+      font-size: 38px;
+      font-weight: bold;
+      letter-spacing: 4px;
+    }
+
+    .asp span {
+      display: block;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+
+  <h2>Register Parking</h2>
+
+  <div class="card">
+    <input id="name" placeholder="Owner Name">
+    <input id="email" placeholder="Email">
+    <input id="phone" placeholder="Phone Number">
+    <input id="price" placeholder="Price per hour (₹)">
+
+    <div id="map"></div>
+
+    <button onclick="saveOwner()">Save Parking</button>
+  </div>
+
+  <div class="asp">
+    ASP
+    <span>A SPACE FOR PARK</span>
+  </div>
+
+</div>
+
+<script>
+let selectedLat = null;
+let selectedLng = null;
+let map, marker;
+
+// GOOGLE MAP PICK LOCATION
+function initMap() {
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: { lat: 9.9312, lng: 76.2673 },
+    zoom: 15
+  });
+
+  map.addListener("click", (e) => {
+    selectedLat = e.latLng.lat();
+    selectedLng = e.latLng.lng();
+
+    if (marker) marker.setMap(null);
+
+    marker = new google.maps.Marker({
+      position: { lat: selectedLat, lng: selectedLng },
+      map: map
+    });
+  });
+}
+
+// SAVE OWNER DATA + REDIRECT
+function saveOwner() {
+  if (!selectedLat || !selectedLng) {
+    alert("Please select location on map");
+    return;
+  }
+
+  fetch("http://localhost:3000/api/owner/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: document.getElementById("name").value,
+      email: document.getElementById("email").value,
+      phone: document.getElementById("phone").value,
+      price: document.getElementById("price").value,
+      location: {
+        type: "Point",
+        coordinates: [selectedLng, selectedLat]
+      }
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+  localStorage.setItem("ownerId", data.ownerId);   // ✅ IMPORTANT
+  localStorage.setItem("ownerName", document.getElementById("name").value);
+  localStorage.setItem("ownerPhone", document.getElementById("phone").value);
+
+  window.location.href = "owner-dashboard.html";
+})
+
+  .catch(err => {
+    alert("Error saving data");
+    console.error(err);
+  });
+}
+</script>
+
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&callback=initMap"
+  async
+  defer>
+</script>
+
+</body>
+</html>

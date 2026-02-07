@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register Parking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #FFD400;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .phone {
+      width: 360px;
+      height: 700px;
+      background: #FFD400;
+      border-radius: 30px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+      padding: 15px;
+      overflow-y: auto;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+    }
+
+    textarea {
+      resize: none;
+      height: 70px;
+    }
+
+    #map {
+      width: 100%;
+      height: 180px;
+      border-radius: 12px;
+      margin-top: 10px;
+    }
+
+    button {
+      background: black;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+
+  <h2>Register Parking Space</h2>
+
+  <input id="price" type="number" placeholder="Price per hour (₹)">
+  <textarea id="notes" placeholder="Notes / Specification"></textarea>
+
+  <!-- IMAGE UPLOAD -->
+  <input id="images" type="file" accept="image/*" multiple>
+
+  <!-- MAP -->
+  <div id="map"></div>
+
+  <button onclick="registerParking()">Save Parking Space</button>
+
+</div>
+
+<script>
+let lat = null;
+let lng = null;
+let map, marker;
+
+/* INIT MAP */
+function initMap() {
+  const defaultLoc = { lat: 9.9312, lng: 76.2673 };
+
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: defaultLoc,
+    zoom: 14,
+  });
+
+  map.addListener("click", (e) => {
+    lat = e.latLng.lat();
+    lng = e.latLng.lng();
+
+    if (marker) marker.setMap(null);
+
+    marker = new google.maps.Marker({
+      position: { lat, lng },
+      map: map,
+    });
+  });
+}
+
+/* REGISTER PARKING */
+function registerParking() {
+  const price = document.getElementById("price").value;
+  const notes = document.getElementById("notes").value;
+  const files = document.getElementById("images").files;
+  const ownerId = localStorage.getItem("ownerId");
+
+  if (!price || !notes || !lat || !lng) {
+    alert("Fill all fields and select location");
+    return;
+  }
+
+  if (files.length !== 3) {
+    alert("Please upload exactly 3 images");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("price", price);
+  formData.append("notes", notes);
+  formData.append("ownerId", ownerId);
+  formData.append("lat", lat);
+  formData.append("lng", lng);
+
+  for (let i = 0; i < files.length; i++) {
+    formData.append("images", files[i]);
+  }
+
+  fetch("http://localhost:3000/api/parking/register", {
+    method: "POST",
+    body: formData,
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success) {
+        alert("Failed to register parking");
+        return;
+      }
+
+      alert("Parking registered successfully!");
+      window.location.href = "dashboard.html";
+    })
+    .catch(() => alert("Server error"));
+}
+</script>
+
+<!-- ⚠️ PUT YOUR GOOGLE MAPS API KEY -->
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&callback=initMap"
+  async defer>
+</script>
+
+</body>
+</html>

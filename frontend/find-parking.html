@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Find Parking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #FFD400;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .phone {
+      width: 360px;
+      height: 700px;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+      position: relative;
+      background: white;
+    }
+
+    #map { width: 100%; height: 100%; }
+
+    .panel {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: #fff;
+      padding: 15px;
+      text-align: center;
+      display: none;
+      box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+    }
+
+    .image-row {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .image-row img {
+      width: 30%;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .book { background: black; color: white; }
+    .reach { background: black; color: white; }
+    .otpBtn { background: green; color: white; }
+    .complete { background: red; color: white; }
+
+    /* SUCCESS ANIMATION */
+    .success {
+      position: absolute;
+      inset: 0;
+      background: white;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .car {
+      font-size: 60px;
+      animation: pop 0.6s ease;
+    }
+
+    @keyframes pop {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .timer {
+      font-size: 32px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+  <div id="map"></div>
+
+  <!-- INFO PANEL -->
+  <div class="panel" id="infoPanel"></div>
+
+  <!-- STATUS PANEL -->
+  <div class="panel" id="statusPanel">
+    <div id="statusText">Waiting for owner confirmation...</div>
+    <button class="reach" id="reachBtn" style="display:none;" onclick="reachedLocation()">
+      I Reached Location
+    </button>
+  </div>
+
+  <!-- OTP PANEL -->
+  <div class="panel" id="otpPanel">
+    <h3>Enter 4-Digit OTP</h3>
+    <input id="otpInput" maxlength="4" style="width:100%;padding:10px;font-size:18px;">
+    <button class="otpBtn" onclick="verifyOtp()">Verify & Start Parking</button>
+  </div>
+
+  <!-- SUCCESS SCREEN -->
+  <div class="success" id="successScreen">
+    <div class="car">🚗</div>
+    <h3>Car parked safely in ASP</h3>
+  </div>
+
+  <!-- TIMER PANEL -->
+  <div class="panel" id="timerPanel">
+    <h3>Parking Active</h3>
+    <div class="timer" id="timer">00:00</div>
+    <button class="complete" onclick="completeParking()">Complete Parking</button>
+    <h3 id="priceText"></h3>
+  </div>
+</div>
+
+<script>
+let map, currentBooking = null;
+let startTime, timerInterval;
+
+/* INIT MAP */
+function initMap() {
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: { lat: 9.9312, lng: 76.2673 },
+    zoom: 14,
+  });
+
+  loadParkingSpots();
+  watchBookingStatus();
+}
+
+/* LOAD PARKING */
+function loadParkingSpots() {
+  fetch("http://localhost:3000/api/parking/all")
+    .then(res => res.json())
+    .then(data => {
+      data.forEach(spot => {
+        const pos = {
+          lat: spot.location.coordinates[1],
+          lng: spot.location.coordinates[0],
+        };
+
+        const marker = new google.maps.Marker({ position: pos, map });
+        marker.addListener("click", () => showParkingInfo(spot));
+      });
+    });
+}
+
+/* SHOW PARKING INFO */
+function showParkingInfo(spot) {
+  const images = `
+    <div class="image-row">
+      ${spot.images.map(img => `<img src="http://localhost:3000${img}">`).join("")}
+    </div>
+  `;
+
+  infoPanel.innerHTML = `
+    <b>👤 ${spot.ownerName}</b><br>
+    <b>💰 ₹${spot.price}/hour</b><br>
+    <small>${spot.notes || ""}</small>
+    ${images}
+    <button class="book" onclick="preBook('${spot._id}')">Pre-Book</button>
+  `;
+
+  infoPanel.style.display = "block";
+}
+
+/* PRE-BOOK */
+function preBook(parkingId) {
+  const userId = localStorage.getItem("ownerId");
+
+  fetch("http://localhost:3000/api/booking/create", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ parkingId, userId })
+  })
+  .then(() => {
+    infoPanel.style.display = "none";
+    statusPanel.style.display = "block";
+  });
+}
+
+/* WATCH BOOKING STATUS — FIXED */
+function watchBookingStatus() {
+  const userId = localStorage.getItem("ownerId");
+
+  setInterval(async () => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/booking/driver/${userId}`);
+      const b = await res.json();
+
+      if (!b) return;
+
+      currentBooking = b;
+
+      // ALWAYS show status panel if booking exists
+      statusPanel.style.display = "block";
+
+      if (b.status === "confirmed") {
+        statusText.innerText = "Space provider confirmed your order";
+        reachBtn.style.display = "block";   // ⭐ FIXED BUTTON
+      }
+    } catch (err) {
+      console.log("Status error:", err);
+    }
+  }, 3000);
+}
+
+/* DRIVER REACHED */
+function reachedLocation() {
+  statusPanel.style.display = "none";
+  otpPanel.style.display = "block";
+}
+
+/* VERIFY OTP */
+function verifyOtp() {
+  const otp = otpInput.value;
+
+  fetch(`http://localhost:3000/api/booking/verify-otp/${currentBooking._id}`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ otp })
+  })
+  .then(res => res.json())
+  .then(d => {
+    if (!d.success) return alert("Wrong OTP");
+
+    otpPanel.style.display = "none";
+    showSuccessAnimation();
+  });
+}
+
+/* SUCCESS → TIMER */
+function showSuccessAnimation() {
+  successScreen.style.display = "flex";
+
+  setTimeout(() => {
+    successScreen.style.display = "none";
+    startParkingTimer();
+  }, 2000);
+}
+
+/* TIMER START */
+function startParkingTimer() {
+  timerPanel.style.display = "block";
+  startTime = Date.now();
+
+  timerInterval = setInterval(() => {
+    const diff = Date.now() - startTime;
+    const mins = Math.floor(diff / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+
+    timer.innerText =
+      String(mins).padStart(2, "0") + ":" +
+      String(secs).padStart(2, "0");
+  }, 1000);
+}
+
+/* COMPLETE PARKING */
+async function completeParking() {
+  clearInterval(timerInterval);
+
+  const minutes = Math.ceil((Date.now() - startTime) / 60000);
+  const pricePerHour = 50;
+  const total = Math.ceil((minutes / 60) * pricePerHour);
+
+  // create Razorpay order
+  const res = await fetch("http://localhost:3000/api/payment/create-order", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      bookingId: currentBooking._id,
+      amount: total
+    })
+  });
+
+  const data = await res.json();
+
+  const options = {
+    key: "rzp_test_1234567890", // test key
+    amount: data.amount,
+    currency: "INR",
+    name: "ASP Parking",
+    description: "Parking Payment",
+    order_id: data.orderId,
+
+    handler: async function () {
+      await fetch(
+        `http://localhost:3000/api/payment/complete/${currentBooking._id}`,
+        { method: "POST" }
+      );
+
+      priceText.innerText = "Payment Successful ✅\nTotal Paid: ₹" + total;
+    }
+  };
+
+  const rzp = new Razorpay(options);
+  rzp.open();
+}
+
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&callback=initMap" async defer></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+</body>
+</html>

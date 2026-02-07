@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Driver Booking Status</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #FFD400;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .phone {
+      width: 360px;
+      height: 700px;
+      background: #FFD400;
+      border-radius: 30px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .card {
+      background: #FFC800;
+      padding: 20px;
+      border-radius: 15px;
+      margin-top: 40px;
+    }
+
+    .otp {
+      font-size: 40px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .cancel { background: red; color: white; }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+
+  <h2>🚗 Booking Status</h2>
+
+  <div class="card">
+    <div>Status: <b id="status">Loading...</b></div>
+
+    <div id="otpBox" style="display:none;">
+      <p>Show this OTP to owner:</p>
+      <div class="otp" id="otp"></div>
+    </div>
+
+    <button class="cancel" onclick="cancelBooking()">Cancel Booking</button>
+  </div>
+
+</div>
+
+<script>
+const userId = localStorage.getItem("ownerId"); // driver id
+let currentBookingId = null;
+
+/* LOAD DRIVER BOOKING */
+function loadBooking() {
+  fetch(`http://localhost:3000/api/booking/driver/${userId}`)
+    .then(res => res.json())
+    .then(data => {
+
+      if (!data) {
+        document.getElementById("status").innerText = "No active booking";
+        return;
+      }
+
+      currentBookingId = data._id;
+
+      document.getElementById("status").innerText = data.status;
+
+      /* SHOW OTP ONLY WHEN CONFIRMED */
+      if (data.status === "confirmed" || data.status === "active") {
+        document.getElementById("otpBox").style.display = "block";
+        document.getElementById("otp").innerText = data.otp || "----";
+      }
+    });
+}
+
+/* CANCEL BOOKING */
+function cancelBooking() {
+  if (!currentBookingId) return;
+
+  fetch(`http://localhost:3000/api/booking/cancel/${currentBookingId}`, {
+    method: "POST"
+  })
+    .then(res => res.json())
+    .then(() => {
+      alert("Booking cancelled");
+      loadBooking();
+    });
+}
+
+/* AUTO REFRESH EVERY 5 SECONDS */
+setInterval(loadBooking, 5000);
+loadBooking();
+</script>
+
+</body>
+</html>

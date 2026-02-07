@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ASP – Driver Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
+
+    /* Uber-style bottom card */
+    .card {
+      position: fixed;
+      bottom: -300px;
+      left: 0;
+      width: 100%;
+      background: #FFD400;
+      padding: 20px;
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
+      transition: bottom 0.35s ease;
+    }
+
+    .card.active {
+      bottom: 0;
+    }
+
+    .card h3 {
+      margin: 0 0 5px 0;
+    }
+
+    .card p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    #images {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+      overflow-x: auto;
+    }
+
+    #images img {
+      width: 80px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .card button {
+      width: 100%;
+      padding: 14px;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- Bottom Card -->
+<div class="card" id="card">
+  <h3 id="name">Parking</h3>
+  <p id="price">₹0 / hour</p>
+
+  <!-- IMAGES SECTION -->
+  <div id="images"></div>
+
+  <button onclick="bookParking()">Book Parking</button>
+  <button onclick="navigate()">Get Direction</button>
+</div>
+
+<script>
+let map;
+let destLat, destLng;
+let selectedOwnerId = null;
+
+// INIT MAP
+function initMap() {
+
+  navigator.geolocation.getCurrentPosition(pos => {
+
+    const userLat = pos.coords.latitude;
+    const userLng = pos.coords.longitude;
+
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: userLat, lng: userLng },
+      zoom: 15
+    });
+
+    // 🔴 DRIVER MARKER
+    new google.maps.Marker({
+      position: { lat: userLat, lng: userLng },
+      map: map,
+      icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+      title: "You"
+    });
+
+    // 🟢 FETCH NEARBY PARKING OWNERS
+    fetch(
+      "http://localhost:3000/api/owner/nearby?lat=" +
+      userLat +
+      "&lng=" +
+      userLng
+    )
+    .then(res => res.json())
+    .then(owners => {
+
+      owners.forEach(owner => {
+
+        const marker = new google.maps.Marker({
+          position: {
+            lat: owner.location.coordinates[1],
+            lng: owner.location.coordinates[0]
+          },
+          map: map,
+          icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
+        });
+
+        marker.addListener("click", () => {
+
+          // save selected parking
+          selectedOwnerId = owner._id;
+          destLat = owner.location.coordinates[1];
+          destLng = owner.location.coordinates[0];
+
+          // show details
+          document.getElementById("name").innerText = owner.name;
+          document.getElementById("price").innerText =
+            "₹" + owner.price + " / hour";
+
+          // ✅ SHOW IMAGES
+          document.getElementById("images").innerHTML = "";
+
+          if (owner.images && owner.images.length > 0) {
+            owner.images.forEach(img => {
+              const image = document.createElement("img");
+              image.src = "http://localhost:3000/uploads/" + img;
+              document.getElementById("images").appendChild(image);
+            });
+          }
+
+          document.getElementById("card").classList.add("active");
+        });
+
+      });
+
+    });
+
+  }, () => alert("Location permission required"));
+}
+
+// 📍 NAVIGATION
+function navigate() {
+  if (!destLat || !destLng) return;
+
+  window.open(
+    "https://www.google.com/maps/dir/?api=1&destination=" +
+    destLat + "," + destLng,
+    "_blank"
+  );
+}
+
+// 🅿️ BOOK PARKING
+function bookParking() {
+  if (!selectedOwnerId) return;
+
+  fetch("http://localhost:3000/api/booking/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ownerId: selectedOwnerId,
+      driverPhone: localStorage.getItem("phone")
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert(data.message);
+    location.reload();
+  })
+  .catch(() => alert("Booking failed"));
+}
+</script>
+
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&callback=initMap"
+  async
+  defer>
+</script>
+
+</body>
+</html>

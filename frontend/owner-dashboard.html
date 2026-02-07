@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ASP – Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #FFD400;
+    }
+
+    /* TOP BAR */
+    .topbar {
+      background: black;
+      color: white;
+      padding: 12px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .switch {
+      display: flex;
+      background: #333;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .switch button {
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      color: white;
+      cursor: pointer;
+    }
+
+    .switch button.active {
+      background: #FFD400;
+      color: black;
+      font-weight: bold;
+    }
+
+    /* LAYOUT */
+    .container {
+      display: flex;
+    }
+
+    .sidebar {
+      width: 220px;
+      background: black;
+      color: white;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .sidebar button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .sidebar button:hover {
+      background: #FFD400;
+      color: black;
+    }
+
+    .main {
+      flex: 1;
+      padding: 25px;
+    }
+
+    .card {
+      background: #FFC800;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 10px;
+      border: none;
+    }
+
+    button.save {
+      background: black;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .images {
+      display: flex;
+      gap: 10px;
+    }
+
+    .images img {
+      width: 80px;
+      height: 80px;
+      border-radius: 10px;
+      object-fit: cover;
+    }
+
+    #map {
+      width: 100%;
+      height: 350px;
+      border-radius: 15px;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>ASP</div>
+  <div class="switch">
+    <button id="accBtn" class="active" onclick="showAccount()">Account</button>
+    <button id="parkBtn" onclick="showParking()">Parking</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <p id="accName"></p>
+    <p id="accPhone"></p>
+
+    <button onclick="showSection('accountBox')">Account</button>
+    <button onclick="showSection('editBox')">Edit Details</button>
+    <button onclick="showSection('imageBox')">Upload Images</button>
+    <button onclick="showSection('historyBox')">History</button>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ACCOUNT -->
+    <div id="accountBox" class="card">
+      <h3>My Account</h3>
+      <p><b>Name:</b> <span id="viewName"></span></p>
+      <p><b>Phone:</b> <span id="viewPhone"></span></p>
+      <p><b>Price:</b> ₹<span id="viewPrice"></span>/hour</p>
+    </div>
+
+    <!-- EDIT -->
+    <div id="editBox" class="card hidden">
+      <h3>Edit Details</h3>
+      <input id="name">
+      <input id="phone">
+      <input id="email">
+      <input id="price">
+      <input id="password" type="password" placeholder="New password (optional)">
+      <div id="map"></div>
+      <button class="save" onclick="updateProfile()">Save Changes</button>
+    </div>
+
+    <!-- IMAGES -->
+    <div id="imageBox" class="card hidden">
+      <h3>Parking Images</h3>
+      <div class="images" id="imageList"></div>
+      <input type="file" id="imageInput" multiple>
+      <button class="save" onclick="uploadImages()">Upload</button>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="historyBox" class="card hidden">
+      <h3>Parking History</h3>
+      <p>No bookings yet</p>
+    </div>
+
+    <!-- PARKING MODE -->
+    <div id="parkingBox" class="card hidden">
+      <div id="parkingMap" style="height:400px;"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const userId = localStorage.getItem("ownerId");
+let lat, lng, editMap, parkMap;
+
+/* SECTION SWITCH */
+function showSection(id) {
+  ["accountBox","editBox","imageBox","historyBox"].forEach(s =>
+    document.getElementById(s).classList.add("hidden")
+  );
+  document.getElementById(id).classList.remove("hidden");
+}
+
+/* MODE SWITCH */
+function showAccount() {
+  accBtn.classList.add("active");
+  parkBtn.classList.remove("active");
+  parkingBox.classList.add("hidden");
+}
+
+function showParking() {
+  parkBtn.classList.add("active");
+  accBtn.classList.remove("active");
+  parkingBox.classList.remove("hidden");
+  initParkingMap();
+}
+
+/* LOAD USER DATA */
+fetch("http://localhost:3000/api/user/me/" + userId)
+  .then(res => res.json())
+  .then(u => {
+    accName.innerText = u.name;
+    accPhone.innerText = u.phone;
+
+    viewName.innerText = u.name;
+    viewPhone.innerText = u.phone;
+    viewPrice.innerText = u.price;
+
+    name.value = u.name;
+    phone.value = u.phone;
+    email.value = u.email;
+    price.value = u.price;
+
+    lat = u.location.coordinates[1];
+    lng = u.location.coordinates[0];
+
+    initEditMap();
+  });
+
+/* EDIT MAP */
+function initEditMap() {
+  editMap = new google.maps.Map(document.getElementById("map"), {
+    center: { lat, lng },
+    zoom: 14
+  });
+
+  editMap.addListener("click", e => {
+    lat = e.latLng.lat();
+    lng = e.latLng.lng();
+    new google.maps.Marker({ position:{lat,lng}, map: editMap });
+  });
+}
+
+/* UPDATE PROFILE */
+function updateProfile() {
+  fetch("http://localhost:3000/api/user/update/" + userId, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: name.value,
+      phone: phone.value,
+      email: email.value,
+      price: price.value,
+      password: password.value || null,
+      location: { type:"Point", coordinates:[lng, lat] }
+    })
+  })
+  .then(res => res.json())
+  .then(() => {
+    alert("Profile updated");
+    location.reload();
+  });
+}
+
+/* IMAGE UPLOAD */
+function uploadImages() {
+  const fd = new FormData();
+  for (let f of imageInput.files) fd.append("images", f);
+
+  fetch("http://localhost:3000/api/owner/upload-images/" + userId, {
+    method: "POST",
+    body: fd
+  })
+  .then(res => res.json())
+  .then(() => location.reload());
+}
+
+/* PARKING MAP */
+function initParkingMap() {
+  if (parkMap) return;
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    const uLat = pos.coords.latitude;
+    const uLng = pos.coords.longitude;
+
+    parkMap = new google.maps.Map(document.getElementById("parkingMap"), {
+      center: { lat: uLat, lng: uLng },
+      zoom: 14
+    });
+
+    new google.maps.Marker({
+      position: { lat: uLat, lng: uLng },
+      map: parkMap,
+      icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+    });
+
+    fetch("http://localhost:3000/api/owner/nearby?lat="+uLat+"&lng="+uLng)
+      .then(res => res.json())
+      .then(list => {
+        list.forEach(o => {
+          new google.maps.Marker({
+            position: {
+              lat: o.location.coordinates[1],
+              lng: o.location.coordinates[0]
+            },
+            map: parkMap,
+            icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
+          });
+        });
+      });
+  });
+}
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4" async defer></script>
+
+</body>
+</html>

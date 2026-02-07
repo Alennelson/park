@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Select Role</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      background: #FFD400;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial;
+    }
+
+    .box {
+      width: 300px;
+      background: #FFC800;
+      padding: 30px;
+      border-radius: 20px;
+      text-align: center;
+      animation: fade 0.5s ease;
+    }
+
+    @keyframes fade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      margin: 15px 0;
+      border: none;
+      border-radius: 12px;
+      background: black;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>Continue as</h2>
+  <button onclick="go('driver')">🚗 Driver</button>
+  <button onclick="go('owner')">🅿️ Parking Owner</button>
+</div>
+
+<script>
+function go(role) {
+  localStorage.setItem("role", role);
+
+  if (role === "owner") {
+    window.location.href = "owner.html";
+  } else {
+    window.location.href = "map.html";
+  }
+}
+</script>
+
+</body>
+</html>

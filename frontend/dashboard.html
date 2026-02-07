@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Parkify Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #FFD400;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .phone {
+      width: 360px;
+      height: 700px;
+      background: #FFD400;
+      border-radius: 30px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+      padding: 20px;
+      position: relative;
+      overflow-y: auto;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .inbox {
+      font-size: 26px;
+      cursor: pointer;
+    }
+
+    .user-box {
+      background: #FFC800;
+      padding: 15px;
+      border-radius: 15px;
+      margin: 15px 0;
+    }
+
+    .btn {
+      width: 100%;
+      height: 110px;
+      border-radius: 20px;
+      border: none;
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      cursor: pointer;
+    }
+
+    .register { background: #000; color: #fff; }
+    .find { background: #fff; color: #000; }
+
+    .section {
+      margin-top: 20px;
+    }
+
+    .card {
+      background: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .card button {
+      margin-top: 5px;
+      width: 48%;
+      padding: 6px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .confirm { background: green; color: white; }
+    .decline { background: red; color: white; }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <h3>Dashboard</h3>
+    <div class="inbox" onclick="toggleInbox()">📩</div>
+  </div>
+
+  <!-- USER INFO -->
+  <div class="user-box">
+    <b id="name">Name</b><br>
+    <span id="email"></span>
+  </div>
+
+  <!-- BUTTONS -->
+  <button class="btn register" onclick="openRegister()">🏠 Register Space</button>
+  <button class="btn find" onclick="openFind()">🚗 Find Parking</button>
+  <button class="btn find" onclick="toggleActivities()">📊 Activities</button>
+ <div class="section" id="activitySection" style="display:none;">
+  <h4>📊 Activities</h4>
+  <div id="activityList"></div>
+</div>
+
+  <!-- INBOX -->
+  <div class="section" id="inboxSection" style="display:none;">
+    <h4>📩 Booking Requests</h4>
+    <div id="inboxList"></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="section">
+    <h4>📜 Booking History</h4>
+    <div id="historyList"></div>
+  </div>
+
+</div>
+
+<script>
+const ownerId = localStorage.getItem("ownerId");
+
+/* LOAD USER INFO */
+document.getElementById("name").innerText =
+  localStorage.getItem("name") || "User";
+
+document.getElementById("email").innerText =
+  localStorage.getItem("email") || "";
+
+/* NAVIGATION */
+function openRegister() {
+  window.location.href = "register-parking.html";
+}
+function openFind() {
+  window.location.href = "find-parking.html";
+}
+
+/* TOGGLE INBOX */
+function toggleInbox() {
+  const section = document.getElementById("inboxSection");
+  section.style.display = section.style.display === "none" ? "block" : "none";
+  loadInbox();
+}
+
+/* LOAD INBOX BOOKINGS */
+function loadInbox() {
+  fetch(`http://localhost:3000/api/booking/owner/${ownerId}`)
+    .then(res => res.json())
+    .then(data => {
+      const box = document.getElementById("inboxList");
+      box.innerHTML = "";
+
+      data.forEach(b => {
+        box.innerHTML += `
+          <div class="card">
+            Driver: <b>${b.driverName}</b><br>
+            Status: ${b.status}<br>
+
+            <button class="confirm" onclick="confirmBooking('${b._id}')">Confirm</button>
+            <button class="decline" onclick="declineBooking('${b._id}')">Decline</button>
+          </div>
+        `;
+      });
+    });
+}
+
+/* CONFIRM BOOKING → SHOW OTP */
+function confirmBooking(id) {
+  fetch(`http://localhost:3000/api/booking/confirm/${id}`, { method: "POST" })
+    .then(res => res.json())
+    .then(data => {
+      alert("OTP for driver: " + data.otp);
+      loadInbox();
+    });
+}
+
+/* DECLINE */
+function declineBooking(id) {
+  fetch(`http://localhost:3000/api/booking/decline/${id}`, { method: "POST" })
+    .then(() => loadInbox());
+}
+
+/* LOAD HISTORY */
+function loadHistory() {
+  fetch(`http://localhost:3000/api/booking/owner/${ownerId}`)
+    .then(res => res.json())
+    .then(data => {
+      const box = document.getElementById("historyList");
+      box.innerHTML = "";
+
+      data.forEach(b => {
+        box.innerHTML += `
+          <div class="card">
+            Driver: <b>${b.driverName}</b><br>
+            Status: ${b.status}
+          </div>
+        `;
+      });
+    });
+}
+
+loadHistory();
+</script>
+
+</body>
+</html>
