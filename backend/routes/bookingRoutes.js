@@ -3,7 +3,7 @@ const router = express.Router();
 
 const Booking = require("../models/Booking");
 const User = require("../models/User");
-const Parking = require("../models/Parking"); // ⭐ ADD THIS LINE
+const Parking = require("../models/Parking");
 
 
 /* 1️⃣ DRIVER PRE-BOOK */
@@ -11,24 +11,29 @@ router.post("/create", async (req, res) => {
   try {
     const { parkingId, userId } = req.body;
 
-    const booking = new Booking({ parkingId, userId });
+    const booking = new Booking({
+      parkingId,
+      userId,
+      status: "pending"
+    });
+
     await booking.save();
 
     res.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.log(err);
     res.status(500).json({ success: false });
   }
 });
 
 
-/* 2️⃣ OWNER GET INBOX BOOKINGS */
-/* OWNER GET ONLY HIS BOOKINGS */
+/* 2️⃣ OWNER GET ONLY HIS BOOKINGS */
 router.get("/owner/:ownerId", async (req, res) => {
   try {
     const ownerId = req.params.ownerId;
 
     const parkings = await Parking.find({ ownerId });
-    const parkingIds = parkings.map(p => p._id.toString());
+    const parkingIds = parkings.map(p => p._id);
 
     const bookings = await Booking.find({
       parkingId: { $in: parkingIds }
@@ -52,6 +57,7 @@ router.get("/owner/:ownerId", async (req, res) => {
   }
 });
 
+
 /* 3️⃣ OWNER CONFIRM → GENERATE OTP */
 router.post("/confirm/:id", async (req, res) => {
   try {
@@ -64,7 +70,8 @@ router.post("/confirm/:id", async (req, res) => {
     );
 
     res.json({ success: true, otp: booking.otp });
-  } catch {
+  } catch (err) {
+    console.log(err);
     res.status(500).json({ success: false });
   }
 });
@@ -75,14 +82,14 @@ router.post("/decline/:id", async (req, res) => {
   try {
     await Booking.findByIdAndUpdate(req.params.id, { status: "declined" });
     res.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.log(err);
     res.status(500).json({ success: false });
   }
 });
 
 
-/* 5️⃣ OWNER VERIFY OTP → START PARKING */
-/* VERIFY OTP */
+/* 5️⃣ VERIFY OTP → START PARKING */
 router.post("/verify-otp/:id", async (req, res) => {
   try {
     const { otp } = req.body;
@@ -94,17 +101,9 @@ router.post("/verify-otp/:id", async (req, res) => {
       return res.json({ success: false, message: "Wrong OTP" });
     }
 
-    // start timer
+    // start parking
     booking.status = "active";
     booking.startTime = new Date();
-
-    // example: 1 hour parking
-    const HOURS = 1;
-    booking.endTime = new Date(Date.now() + HOURS * 60 * 60 * 1000);
-
-    // get parking price
-    const parking = await Parking.findById(booking.parkingId);
-    booking.totalPrice = parking.price * HOURS;
 
     await booking.save();
 
@@ -116,25 +115,23 @@ router.post("/verify-otp/:id", async (req, res) => {
 });
 
 
-module.exports = router;
-/* DRIVER GET LATEST BOOKING */
+/* 6️⃣ DRIVER GET LATEST BOOKING */
 router.get("/driver/:userId", async (req, res) => {
   try {
     const booking = await Booking.findOne({
       userId: req.params.userId,
-      status: { $in: ["pending", "confirmed"] }
+      status: { $in: ["pending", "confirmed", "active"] }
     })
-    .sort({ createdAt: -1 }) // ⭐ VERY IMPORTANT
-    .lean();
+      .sort({ createdAt: -1 })
+      .lean();
 
     if (!booking) return res.json(null);
 
-    // attach parking location
     const parking = await Parking.findById(booking.parkingId);
 
     res.json({
       ...booking,
-      location: parking?.location
+      parking // ⭐ frontend expects this
     });
   } catch (err) {
     console.log(err);
@@ -143,14 +140,16 @@ router.get("/driver/:userId", async (req, res) => {
 });
 
 
-
-
-/* DRIVER CANCEL BOOKING */
+/* 7️⃣ DRIVER CANCEL BOOKING */
 router.post("/cancel/:id", async (req, res) => {
   try {
     await Booking.findByIdAndUpdate(req.params.id, { status: "declined" });
     res.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.log(err);
     res.status(500).json({ success: false });
   }
 });
+
+
+module.exports = router;
