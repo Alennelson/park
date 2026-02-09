@@ -3,6 +3,7 @@
 <head>
   <title>ASP – Register</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="config.js"></script>
 
   <style>
     body {
@@ -112,7 +113,7 @@ function register() {
     return;
   }
 
-  fetch("http://localhost:3000/api/auth/register", {
+  fetch(getApiUrl("/api/auth/register"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, email, password })

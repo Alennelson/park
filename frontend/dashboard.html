@@ -3,6 +3,7 @@
 <head>
   <title>Parkify Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="config.js"></script>
 
   <style>
     body {
@@ -148,7 +149,7 @@ function toggleInbox() {
 
 /* LOAD INBOX BOOKINGS */
 function loadInbox() {
-  fetch(`http://localhost:3000/api/booking/owner/${ownerId}`)
+  fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
     .then(res => res.json())
     .then(data => {
       const box = document.getElementById("inboxList");
@@ -170,7 +171,7 @@ function loadInbox() {
 
 /* CONFIRM BOOKING → SHOW OTP */
 function confirmBooking(id) {
-  fetch(`http://localhost:3000/api/booking/confirm/${id}`, { method: "POST" })
+  fetch(getApiUrl(`/api/booking/confirm/${id}`), { method: "POST" })
     .then(res => res.json())
     .then(data => {
       alert("OTP for driver: " + data.otp);
@@ -180,13 +181,13 @@ function confirmBooking(id) {
 
 /* DECLINE */
 function declineBooking(id) {
-  fetch(`http://localhost:3000/api/booking/decline/${id}`, { method: "POST" })
+  fetch(getApiUrl(`/api/booking/decline/${id}`), { method: "POST" })
     .then(() => loadInbox());
 }
 
 /* LOAD HISTORY */
 function loadHistory() {
-  fetch(`http://localhost:3000/api/booking/owner/${ownerId}`)
+  fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
     .then(res => res.json())
     .then(data => {
       const box = document.getElementById("historyList");

@@ -3,6 +3,7 @@
 <head>
   <title>ASP – Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="config.js"></script>
 
   <style>
     * {
@@ -132,7 +133,7 @@
 
 <script>
 function login() {
-  fetch("http://localhost:3000/api/auth/login", {
+  fetch(getApiUrl("/api/auth/login"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

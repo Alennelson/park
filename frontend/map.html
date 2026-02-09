@@ -3,6 +3,7 @@
 <head>
   <title>ASP – Driver Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="config.js"></script>
 
   <style>
     body {
@@ -113,10 +114,10 @@ function initMap() {
 
     // 🟢 FETCH NEARBY PARKING OWNERS
     fetch(
-      "http://localhost:3000/api/owner/nearby?lat=" +
+      getApiUrl("/api/owner/nearby?lat=" +
       userLat +
       "&lng=" +
-      userLng
+      userLng)
     )
     .then(res => res.json())
     .then(owners => {
@@ -150,7 +151,7 @@ function initMap() {
           if (owner.images && owner.images.length > 0) {
             owner.images.forEach(img => {
               const image = document.createElement("img");
-              image.src = "http://localhost:3000/uploads/" + img;
+              image.src = API_CONFIG.BASE_URL + "/uploads/" + img;
               document.getElementById("images").appendChild(image);
             });
           }
@@ -180,7 +181,7 @@ function navigate() {
 function bookParking() {
   if (!selectedOwnerId) return;
 
-  fetch("http://localhost:3000/api/booking/create", {
+  fetch(getApiUrl("/api/booking/create"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

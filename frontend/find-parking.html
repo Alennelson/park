@@ -3,6 +3,7 @@
 <head>
   <title>Find Parking</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="config.js"></script>
 
   <style>
     body {
@@ -132,7 +133,7 @@ function initMap(){
 }
 
 function loadParkingSpots(){
-  fetch("http://localhost:3000/api/parking/all")
+  fetch(getApiUrl("/api/parking/all"))
   .then(r=>r.json())
   .then(data=>{
     data.forEach(spot=>{
@@ -154,7 +155,7 @@ function showParkingInfo(spot){
 function preBook(parkingId){
   const userId=localStorage.getItem("ownerId");
 
-  fetch("http://localhost:3000/api/booking/create",{
+  fetch(getApiUrl("/api/booking/create"),{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({parkingId,userId})
@@ -168,7 +169,7 @@ function watchBookingStatus(){
   const userId=localStorage.getItem("ownerId");
 
   setInterval(async()=>{
-    const res=await fetch(`http://localhost:3000/api/booking/driver/${userId}`);
+    const res=await fetch(getApiUrl(`/api/booking/driver/${userId}`));
     const b=await res.json();
 
     if(!b){ statusPanel.style.display="none"; return; }
@@ -211,7 +212,7 @@ function confirmReached(){
 function verifyOtp(){
   const otp=otpInput.value;
 
-  fetch(`http://localhost:3000/api/booking/verify-otp/${currentBooking._id}`,{
+  fetch(getApiUrl(`/api/booking/verify-otp/${currentBooking._id}`),{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({otp})
@@ -252,7 +253,7 @@ function confirmComplete(){
 }
 
 async function completePayment(total,minutes){
-  const res=await fetch("http://localhost:3000/api/payment/create-order",{
+  const res=await fetch(getApiUrl("/api/payment/create-order"),{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({bookingId:currentBooking._id,amount:total})
@@ -267,7 +268,7 @@ async function completePayment(total,minutes){
     name:"ASP Parking",
     order_id:data.orderId,
     handler:async()=>{
-      await fetch(`http://localhost:3000/api/payment/complete/${currentBooking._id}`,{method:"POST"});
+      await fetch(getApiUrl(`/api/payment/complete/${currentBooking._id}`),{method:"POST"});
       priceText.innerText=`Payment Success\nTime: ${minutes} min\nPaid: ₹${total}`;
     }
   });

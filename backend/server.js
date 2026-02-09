@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+require("dotenv").config();
 
 const Booking = require("./models/Booking");
 
@@ -12,7 +13,8 @@ app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
 /* ================= DATABASE ================= */
-mongoose.connect("mongodb://127.0.0.1:27017/parkify")
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/parkify";
+mongoose.connect(MONGODB_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.error("❌ MongoDB Error:", err));
 
@@ -92,7 +94,7 @@ app.get("/", (req, res) => {
 });
 
 /* ================= START SERVER ================= */
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server started on port ${PORT}`);
 });

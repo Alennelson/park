@@ -3,6 +3,7 @@
 <head>
   <title>Driver Booking Status</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="config.js"></script>
 
   <style>
     body {
@@ -76,7 +77,7 @@ let currentBookingId = null;
 
 /* LOAD DRIVER BOOKING */
 function loadBooking() {
-  fetch(`http://localhost:3000/api/booking/driver/${userId}`)
+  fetch(getApiUrl(`/api/booking/driver/${userId}`))
     .then(res => res.json())
     .then(data => {
 
@@ -101,7 +102,7 @@ function loadBooking() {
 function cancelBooking() {
   if (!currentBookingId) return;
 
-  fetch(`http://localhost:3000/api/booking/cancel/${currentBookingId}`, {
+  fetch(getApiUrl(`/api/booking/cancel/${currentBookingId}`), {
     method: "POST"
   })
     .then(res => res.json())

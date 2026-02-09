@@ -3,6 +3,7 @@
 <head>
   <title>ASP – Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="config.js"></script>
 
   <style>
     body {
@@ -220,7 +221,7 @@ function showParking() {
 }
 
 /* LOAD USER DATA */
-fetch("http://localhost:3000/api/user/me/" + userId)
+fetch(getApiUrl("/api/user/me/" + userId))
   .then(res => res.json())
   .then(u => {
     accName.innerText = u.name;
@@ -257,7 +258,7 @@ function initEditMap() {
 
 /* UPDATE PROFILE */
 function updateProfile() {
-  fetch("http://localhost:3000/api/user/update/" + userId, {
+  fetch(getApiUrl("/api/user/update/" + userId), {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -281,7 +282,7 @@ function uploadImages() {
   const fd = new FormData();
   for (let f of imageInput.files) fd.append("images", f);
 
-  fetch("http://localhost:3000/api/owner/upload-images/" + userId, {
+  fetch(getApiUrl("/api/owner/upload-images/" + userId), {
     method: "POST",
     body: fd
   })
@@ -308,7 +309,7 @@ function initParkingMap() {
       icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
     });
 
-    fetch("http://localhost:3000/api/owner/nearby?lat="+uLat+"&lng="+uLng)
+    fetch(getApiUrl("/api/owner/nearby?lat="+uLat+"&lng="+uLng))
       .then(res => res.json())
       .then(list => {
         list.forEach(o => {

@@ -3,6 +3,7 @@
 <head>
   <title>Register Parking</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="config.js"></script>
 
   <style>
     body {
@@ -128,7 +129,7 @@ function registerParking() {
     formData.append("images", files[i]);
   }
 
-  fetch("http://localhost:3000/api/parking/register", {
+  fetch(getApiUrl("/api/parking/register"), {
     method: "POST",
     body: formData,
   })
