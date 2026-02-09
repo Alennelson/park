@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();   // ⭐ THIS LINE FIXES YOUR ERROR
 const multer = require("multer");
 const Parking = require("../models/Parking");
-const User = require("../models/User");
+const User = require("../models/user");
 
 /* ================= IMAGE UPLOAD SETUP ================= */
 const storage = multer.diskStorage({

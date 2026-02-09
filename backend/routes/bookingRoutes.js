@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const Booking = require("../models/Booking");
-const User = require("../models/User");
+const User = require("../models/user");
 const Parking = require("../models/Parking");
 
 
