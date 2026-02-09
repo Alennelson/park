@@ -147,6 +147,41 @@ function toggleInbox() {
   loadInbox();
 }
 
+/* TOGGLE ACTIVITIES */
+function toggleActivities() {
+  const section = document.getElementById("activitySection");
+  section.style.display = section.style.display === "none" ? "block" : "none";
+  loadActivities();
+}
+
+/* LOAD ACTIVITIES */
+function loadActivities() {
+  fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
+    .then(res => res.json())
+    .then(data => {
+      const box = document.getElementById("activityList");
+      box.innerHTML = "";
+
+      if (data.length === 0) {
+        box.innerHTML = "<p>No activities yet</p>";
+        return;
+      }
+
+      data.forEach(b => {
+        box.innerHTML += `
+          <div class="card">
+            Driver: <b>${b.driverName}</b><br>
+            Status: <b>${b.status}</b><br>
+            Date: ${new Date(b.createdAt).toLocaleDateString()}
+          </div>
+        `;
+      });
+    })
+    .catch(() => {
+      document.getElementById("activityList").innerHTML = "<p>Error loading activities</p>";
+    });
+}
+
 /* LOAD INBOX BOOKINGS */
 function loadInbox() {
   fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
