@@ -123,6 +123,8 @@ function register() {
   const password = document.getElementById("password").value.trim();
   const confirm = document.getElementById("confirm").value.trim();
 
+  console.log("Register clicked", { name, email, password: "***" });
+
   if (!name || !email || !password || !confirm) {
     alert("Please fill all fields");
     return;
@@ -133,13 +135,20 @@ function register() {
     return;
   }
 
+  console.log("Sending request to:", getApiUrl("/api/auth/register"));
+
   fetch(getApiUrl("/api/auth/register"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, email, password })
   })
-  .then(res => res.json())
+  .then(res => {
+    console.log("Response status:", res.status);
+    return res.json();
+  })
   .then(data => {
+    console.log("Response data:", data);
+    
     if (!data.success) {
       alert(data.message || "Registration failed");
       return;
@@ -152,7 +161,10 @@ function register() {
       window.location.href = "login.html";
     }, 1000);
   })
-  .catch(() => alert("Server error. Is backend running?"));
+  .catch(err => {
+    console.error("Registration error:", err);
+    alert("Server error. Please check console for details.");
+  });
 }
 </script>
 

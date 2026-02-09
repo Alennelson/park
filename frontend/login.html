@@ -153,15 +153,21 @@
 
 <script>
 function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  console.log("Login clicked", { email, password: "***" });
+  console.log("Sending request to:", getApiUrl("/api/auth/login"));
+
   fetch(getApiUrl("/api/auth/login"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email: document.getElementById("email").value,
-      password: document.getElementById("password").value
-    })
+    body: JSON.stringify({ email, password })
   })
-  .then(res => res.json())
+  .then(res => {
+    console.log("Response status:", res.status);
+    return res.json();
+  })
   .then(data => {
     console.log("Server response:", data);
 
@@ -175,11 +181,12 @@ function login() {
     localStorage.setItem("email", data.email);
     localStorage.setItem("role", data.role);
 
+    console.log("Login successful, redirecting to dashboard");
     window.location.href = "dashboard.html";
   })
   .catch(err => {
-    console.error(err);
-    alert("Server error. Is backend running?");
+    console.error("Login error:", err);
+    alert("Server error. Please check console for details.");
   });
 }
 
