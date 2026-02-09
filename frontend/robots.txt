@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard.html
+Disallow: /owner-dashboard.html
+Disallow: /driver-booking.html
+
+Sitemap: https://www.alen.club/sitemap.xml
