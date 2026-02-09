@@ -93,6 +93,36 @@ app.get("/", (req, res) => {
   res.send("🚗 Parkify Server Running");
 });
 
+/* ================= DATABASE TEST ROUTE ================= */
+app.get("/api/test/db", async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
+    const states = {
+      0: "disconnected",
+      1: "connected",
+      2: "connecting",
+      3: "disconnecting"
+    };
+    
+    // Try to count users
+    const User = require("./models/user");
+    const userCount = await User.countDocuments();
+    
+    res.json({
+      status: "ok",
+      database: states[dbState],
+      mongodb: dbState === 1 ? "✅ Connected" : "❌ Not Connected",
+      userCount: userCount,
+      message: dbState === 1 ? "Database is working!" : "Database connection issue"
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      error: err.message,
+      mongodb: "❌ Error accessing database"
+    });
+  }
+});
+
 /* ================= START SERVER ================= */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parkify - Connection Test</title>
+  <script src="config.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-box {
+      background: white;
+      padding: 20px;
+      margin: 10px 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #FFD400;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #FFC800;
+    }
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f0f0f0;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      font-family: monospace;
+    }
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>🔧 Parkify Connection Test</h1>
+  
+  <div class="test-box">
+    <h3>1. Backend Server Test</h3>
+    <button onclick="testBackend()">Test Backend Connection</button>
+    <div id="backend-result" class="result"></div>
+  </div>
+
+  <div class="test-box">
+    <h3>2. Database Connection Test</h3>
+    <button onclick="testDatabase()">Test Database Connection</button>
+    <div id="db-result" class="result"></div>
+  </div>
+
+  <div class="test-box">
+    <h3>3. Registration Test</h3>
+    <input id="test-name" placeholder="Name" style="padding: 8px; margin: 5px;">
+    <input id="test-email" placeholder="Email" style="padding: 8px; margin: 5px;">
+    <input id="test-password" type="password" placeholder="Password" style="padding: 8px; margin: 5px;">
+    <br>
+    <button onclick="testRegister()">Test Registration</button>
+    <div id="register-result" class="result"></div>
+  </div>
+
+  <div class="test-box">
+    <h3>4. Login Test</h3>
+    <input id="login-email" placeholder="Email" style="padding: 8px; margin: 5px;">
+    <input id="login-password" type="password" placeholder="Password" style="padding: 8px; margin: 5px;">
+    <br>
+    <button onclick="testLogin()">Test Login</button>
+    <div id="login-result" class="result"></div>
+  </div>
+
+  <script>
+    function testBackend() {
+      const result = document.getElementById('backend-result');
+      result.innerHTML = 'Testing...';
+      
+      fetch(getApiUrl('/'))
+        .then(res => res.text())
+        .then(data => {
+          result.innerHTML = `<span class="success">✅ Backend is running!</span>\n${data}`;
+        })
+        .catch(err => {
+          result.innerHTML = `<span class="error">❌ Backend connection failed!</span>\n${err.message}`;
+        });
+    }
+
+    function testDatabase() {
+      const result = document.getElementById('db-result');
+      result.innerHTML = 'Testing...';
+      
+      fetch(getApiUrl('/api/test/db'))
+        .then(res => res.json())
+        .then(data => {
+          result.innerHTML = `<span class="success">✅ Database test complete!</span>\n${JSON.stringify(data, null, 2)}`;
+        })
+        .catch(err => {
+          result.innerHTML = `<span class="error">❌ Database test failed!</span>\n${err.message}`;
+        });
+    }
+
+    function testRegister() {
+      const result = document.getElementById('register-result');
+      const name = document.getElementById('test-name').value;
+      const email = document.getElementById('test-email').value;
+      const password = document.getElementById('test-password').value;
+
+      if (!name || !email || !password) {
+        result.innerHTML = '<span class="error">Please fill all fields</span>';
+        return;
+      }
+
+      result.innerHTML = 'Testing registration...';
+      
+      fetch(getApiUrl('/api/auth/register'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            result.innerHTML = `<span class="success">✅ Registration successful!</span>\n${JSON.stringify(data, null, 2)}`;
+          } else {
+            result.innerHTML = `<span class="error">❌ Registration failed!</span>\n${JSON.stringify(data, null, 2)}`;
+          }
+        })
+        .catch(err => {
+          result.innerHTML = `<span class="error">❌ Registration error!</span>\n${err.message}`;
+        });
+    }
+
+    function testLogin() {
+      const result = document.getElementById('login-result');
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      if (!email || !password) {
+        result.innerHTML = '<span class="error">Please fill all fields</span>';
+        return;
+      }
+
+      result.innerHTML = 'Testing login...';
+      
+      fetch(getApiUrl('/api/auth/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.ownerId) {
+            result.innerHTML = `<span class="success">✅ Login successful!</span>\n${JSON.stringify(data, null, 2)}`;
+          } else {
+            result.innerHTML = `<span class="error">❌ Login failed!</span>\n${JSON.stringify(data, null, 2)}`;
+          }
+        })
+        .catch(err => {
+          result.innerHTML = `<span class="error">❌ Login error!</span>\n${err.message}`;
+        });
+    }
+  </script>
+</body>
+</html>
