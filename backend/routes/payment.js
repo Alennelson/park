@@ -6,8 +6,8 @@ const router = express.Router();
 
 /* 🔑 RAZORPAY CREDENTIALS FROM ENVIRONMENT */
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_SCqhmRjFdQCDYM",
-  key_secret: process.env.RAZORPAY_KEY_SECRET || "ixizAmYHqiNtvGP3yUkLBoRe"
+  key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_SETz7llzDcy8Ua",
+  key_secret: process.env.RAZORPAY_KEY_SECRET || "1myvqH79QLyk3jIa5KVArb3h"
 });
 
 /* CREATE ORDER */
@@ -36,7 +36,7 @@ router.post("/create-order", async (req, res) => {
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      keyId: process.env.RAZORPAY_KEY_ID || "rzp_test_SCqhmRjFdQCDYM"
+      keyId: process.env.RAZORPAY_KEY_ID || "rzp_test_SETz7llzDcy8Ua"
     });
   } catch (err) {
     console.error("Create order error:", err);
@@ -60,7 +60,7 @@ router.post("/verify", (req, res) => {
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
 
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || "ixizAmYHqiNtvGP3yUkLBoRe";
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || "1myvqH79QLyk3jIa5KVArb3h";
     
     const expected = crypto
       .createHmac("sha256", keySecret)
