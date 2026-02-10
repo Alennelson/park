@@ -15,66 +15,42 @@
     body {
       font-family: Arial, sans-serif;
       background: #FFD400;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
-
-    .phone {
-      width: 100%;
-      max-width: 400px;
-      height: 700px;
-      background: #FFD400;
-      border-radius: 30px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
-      display: flex;
-      flex-direction: column;
+      height: 100vh;
       overflow: hidden;
     }
 
-    /* TOP BAR */
-    .top-bar {
-      background: #FFC800;
-      padding: 15px 20px;
+    .dashboard-container {
       display: flex;
-      justify-content: space-between;
+      height: 100vh;
+    }
+
+    /* LEFT SIDEBAR MENU */
+    .left-sidebar {
+      width: 80px;
+      background: #FFC800;
+      display: flex;
+      flex-direction: column;
       align-items: center;
+      padding: 20px 0;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
     }
 
-    .logout-btn {
-      background: #ff4444;
-      color: white;
-      border: none;
-      padding: 8px 15px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    /* CONTENT AREA */
-    .content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-    }
-
-    /* MENU BAR */
-    .menu-bar {
-      background: #FFC800;
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0;
-      border-top: 2px solid #FFB000;
+    .logo {
+      font-size: 32px;
+      margin-bottom: 30px;
     }
 
     .menu-item {
-      text-align: center;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 10px 0;
       cursor: pointer;
-      padding: 5px;
-      flex: 1;
-      transition: background 0.3s;
+      border-radius: 12px;
+      transition: all 0.3s;
     }
 
     .menu-item:hover {
@@ -82,56 +58,47 @@
     }
 
     .menu-item.active {
-      background: #FFB000;
-      border-radius: 10px;
+      background: #000;
+      color: #FFD400;
     }
 
     .menu-icon {
       font-size: 24px;
-      display: block;
     }
 
     .menu-label {
-      font-size: 11px;
+      font-size: 9px;
       margin-top: 3px;
     }
 
-    /* USER BOX */
-    .user-box {
+    .logout-menu {
+      margin-top: auto;
+      background: #ff4444;
+      color: white;
+    }
+
+    /* MAIN CONTENT AREA */
+    .main-content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+      background: #FFD400;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .user-info {
       background: #FFC800;
-      padding: 15px;
+      padding: 15px 20px;
       border-radius: 15px;
-      margin-bottom: 20px;
     }
 
-    /* STATS GRID */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .stat-card {
-      background: white;
-      padding: 15px;
-      border-radius: 12px;
-      text-align: center;
-    }
-
-    .stat-value {
-      font-size: 28px;
-      font-weight: bold;
-      color: #333;
-    }
-
-    .stat-label {
-      font-size: 12px;
-      color: #666;
-      margin-top: 5px;
-    }
-
-    /* SECTION */
+    /* SECTIONS */
     .section {
       display: none;
     }
@@ -140,26 +107,56 @@
       display: block;
     }
 
+    /* STATS GRID */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #666;
+      margin-top: 8px;
+    }
+
     /* CARD */
     .card {
       background: white;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 10px;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
 
     .card h4 {
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       color: #333;
     }
 
     .card button {
-      padding: 8px 15px;
+      padding: 10px 20px;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
       margin: 5px 5px 0 0;
       font-size: 14px;
+      font-weight: bold;
     }
 
     .btn-edit {
@@ -176,23 +173,23 @@
       background: #000;
       color: white;
       width: 100%;
-      padding: 12px;
+      padding: 14px;
       margin-top: 10px;
     }
 
     /* FORM */
     input, textarea {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       margin: 8px 0;
       border: 1px solid #ddd;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 14px;
     }
 
     textarea {
       resize: vertical;
-      min-height: 80px;
+      min-height: 100px;
     }
 
     .image-preview {
@@ -203,29 +200,154 @@
     }
 
     .image-preview img {
-      width: 80px;
-      height: 80px;
+      width: 100px;
+      height: 100px;
       object-fit: cover;
+      border-radius: 10px;
+    }
+
+    /* RIGHT SIDEBAR INBOX */
+    .right-sidebar {
+      width: 320px;
+      background: #FFC800;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    }
+
+    .inbox-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .inbox-header h3 {
+      font-size: 20px;
+    }
+
+    .notification-badge {
+      background: #ff4444;
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .inbox-card {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .inbox-card.pending {
+      border-left: 4px solid #ff9800;
+    }
+
+    .inbox-card h4 {
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .inbox-card p {
+      font-size: 12px;
+      color: #666;
+      margin: 4px 0;
+    }
+
+    .inbox-card button {
+      padding: 8px 15px;
+      border: none;
       border-radius: 8px;
+      cursor: pointer;
+      margin: 8px 5px 0 0;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .btn-confirm {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .btn-decline {
+      background: #f44336;
+      color: white;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .right-sidebar {
+        display: none;
+      }
+      
+      .left-sidebar {
+        width: 60px;
+      }
+      
+      .menu-label {
+        display: none;
+      }
     }
   </style>
 </head>
 <body>
 
-<div class="phone">
-  <!-- TOP BAR -->
-  <div class="top-bar">
-    <h3>Parkify Dashboard</h3>
-    <button class="logout-btn" onclick="logout()">Logout</button>
+<div class="dashboard-container">
+  <!-- LEFT SIDEBAR MENU -->
+  <div class="left-sidebar">
+    <div class="logo">🅿️</div>
+    
+    <div class="menu-item active" onclick="showSection('dashboardSection')" title="Dashboard">
+      <span class="menu-icon">🏠</span>
+      <div class="menu-label">Home</div>
+    </div>
+    
+    <div class="menu-item" onclick="showSection('mySpacesSection')" title="My Spaces">
+      <span class="menu-icon">🚗</span>
+      <div class="menu-label">Spaces</div>
+    </div>
+    
+    <div class="menu-item" onclick="showSection('statsSection')" title="Statistics">
+      <span class="menu-icon">📊</span>
+      <div class="menu-label">Stats</div>
+    </div>
+    
+    <div class="menu-item" onclick="showSection('settingsSection')" title="Settings">
+      <span class="menu-icon">⚙️</span>
+      <div class="menu-label">Settings</div>
+    </div>
+    
+    <div class="menu-item logout-menu" onclick="logout()" title="Logout">
+      <span class="menu-icon">🚪</span>
+      <div class="menu-label">Logout</div>
+    </div>
   </div>
 
-  <!-- CONTENT AREA -->
-  <div class="content">
+  <!-- MAIN CONTENT AREA -->
+  <div class="main-content">
     <!-- DASHBOARD SECTION -->
     <div id="dashboardSection" class="section active">
-      <div class="user-box">
-        <b id="userName">Loading...</b><br>
-        <span id="userEmail"></span>
+      <div class="top-bar">
+        <h2>Dashboard</h2>
+        <div class="user-info">
+          <b id="userName">Loading...</b><br>
+          <small id="userEmail"></small>
+        </div>
       </div>
 
       <div class="stats-grid">
@@ -249,58 +371,98 @@
 
       <div class="card">
         <h4>Quick Actions</h4>
-        <button class="btn-primary" onclick="showSection('mySpacesSection')">Manage My Spaces</button>
-        <button class="btn-primary" onclick="window.location.href='register-parking.html'">Register New Space</button>
-        <button class="btn-primary" onclick="window.location.href='find-parking.html'">Find Parking</button>
+        <button class="btn-primary" onclick="window.location.href='register-parking.html'">➕ Register New Space</button>
+        <button class="btn-primary" onclick="window.location.href='find-parking.html'">🔍 Find Parking</button>
       </div>
     </div>
 
     <!-- MY SPACES SECTION -->
     <div id="mySpacesSection" class="section">
-      <h3>My Parking Spaces</h3>
+      <div class="top-bar">
+        <h2>My Parking Spaces</h2>
+      </div>
       <div id="spacesList"></div>
     </div>
 
     <!-- EDIT SPACE SECTION -->
     <div id="editSpaceSection" class="section">
-      <h3>Edit Parking Space</h3>
+      <div class="top-bar">
+        <h2>Edit Parking Space</h2>
+      </div>
       <div class="card">
         <input type="hidden" id="editSpaceId">
-        <label>Price (₹/hour)</label>
+        <label><b>Price (₹/hour)</b></label>
         <input type="number" id="editPrice" placeholder="Price per hour">
         
-        <label>Description</label>
+        <label><b>Description</b></label>
         <textarea id="editNotes" placeholder="Description and notes"></textarea>
         
-        <label>Current Images</label>
+        <label><b>Current Images</b></label>
         <div id="currentImages" class="image-preview"></div>
         
-        <button class="btn-primary" onclick="updateSpace()">Save Changes</button>
-        <button class="btn-primary" style="background: #666;" onclick="showSection('mySpacesSection')">Cancel</button>
+        <button class="btn-primary" onclick="updateSpace()">💾 Save Changes</button>
+        <button class="btn-primary" style="background: #666;" onclick="showSection('mySpacesSection')">❌ Cancel</button>
       </div>
     </div>
 
-    <!-- BOOKINGS SECTION -->
-    <div id="bookingsSection" class="section">
-      <h3>Booking Requests</h3>
-      <div id="bookingsList"></div>
+    <!-- STATS SECTION -->
+    <div id="statsSection" class="section">
+      <div class="top-bar">
+        <h2>Statistics & Analytics</h2>
+      </div>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat_totalBookings">0</div>
+          <div class="stat-label">Total Bookings</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat_completed">0</div>
+          <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat_pending">0</div>
+          <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat_active">0</div>
+          <div class="stat-label">Active</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>Recent Activity</h4>
+        <div id="recentActivity"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS SECTION -->
+    <div id="settingsSection" class="section">
+      <div class="top-bar">
+        <h2>Settings</h2>
+      </div>
+      
+      <div class="card">
+        <h4>Account Information</h4>
+        <p><b>Name:</b> <span id="settingsName"></span></p>
+        <p><b>Email:</b> <span id="settingsEmail"></span></p>
+        <p><b>User ID:</b> <span id="settingsId"></span></p>
+      </div>
+
+      <div class="card">
+        <h4>Actions</h4>
+        <button class="btn-primary" onclick="logout()">🚪 Logout</button>
+      </div>
     </div>
   </div>
 
-  <!-- MENU BAR -->
-  <div class="menu-bar">
-    <div class="menu-item active" onclick="showSection('dashboardSection')">
-      <span class="menu-icon">🏠</span>
-      <div class="menu-label">Dashboard</div>
+  <!-- RIGHT SIDEBAR INBOX -->
+  <div class="right-sidebar">
+    <div class="inbox-header">
+      <h3>📬 Inbox</h3>
+      <div class="notification-badge" id="notificationBadge">0</div>
     </div>
-    <div class="menu-item" onclick="showSection('mySpacesSection')">
-      <span class="menu-icon">🅿️</span>
-      <div class="menu-label">My Spaces</div>
-    </div>
-    <div class="menu-item" onclick="showSection('bookingsSection')">
-      <span class="menu-icon">📋</span>
-      <div class="menu-label">Bookings</div>
-    </div>
+    <div id="inboxList"></div>
   </div>
 </div>
 
@@ -310,6 +472,9 @@ const ownerId = localStorage.getItem("ownerId");
 // Load user info
 document.getElementById("userName").innerText = localStorage.getItem("name") || "User";
 document.getElementById("userEmail").innerText = localStorage.getItem("email") || "";
+document.getElementById("settingsName").innerText = localStorage.getItem("name") || "User";
+document.getElementById("settingsEmail").innerText = localStorage.getItem("email") || "";
+document.getElementById("settingsId").innerText = ownerId || "N/A";
 
 // Show section and update menu
 function showSection(sectionId) {
@@ -318,15 +483,18 @@ function showSection(sectionId) {
   
   document.getElementById(sectionId).classList.add('active');
   
+  const menuItems = document.querySelectorAll('.menu-item');
   if (sectionId === 'dashboardSection') {
-    document.querySelectorAll('.menu-item')[0].classList.add('active');
+    menuItems[0].classList.add('active');
     loadDashboardStats();
   } else if (sectionId === 'mySpacesSection') {
-    document.querySelectorAll('.menu-item')[1].classList.add('active');
+    menuItems[1].classList.add('active');
     loadMySpaces();
-  } else if (sectionId === 'bookingsSection') {
-    document.querySelectorAll('.menu-item')[2].classList.add('active');
-    loadBookings();
+  } else if (sectionId === 'statsSection') {
+    menuItems[2].classList.add('active');
+    loadDetailedStats();
+  } else if (sectionId === 'settingsSection') {
+    menuItems[3].classList.add('active');
   }
 }
 
@@ -357,6 +525,35 @@ function loadDashboardStats() {
     .catch(err => console.error('Stats error:', err));
 }
 
+// Load detailed statistics
+function loadDetailedStats() {
+  fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
+    .then(res => res.json())
+    .then(data => {
+      const total = data.length;
+      const completed = data.filter(b => b.status === 'completed').length;
+      const pending = data.filter(b => b.status === 'pending').length;
+      const active = data.filter(b => b.status === 'active').length;
+      
+      document.getElementById('stat_totalBookings').innerText = total;
+      document.getElementById('stat_completed').innerText = completed;
+      document.getElementById('stat_pending').innerText = pending;
+      document.getElementById('stat_active').innerText = active;
+      
+      // Recent activity
+      const activityDiv = document.getElementById('recentActivity');
+      if (data.length === 0) {
+        activityDiv.innerHTML = '<p>No recent activity</p>';
+        return;
+      }
+      
+      activityDiv.innerHTML = data.slice(0, 5).map(b => `
+        <p><b>${b.driverName || 'Unknown'}</b> - ${b.status} - ${new Date(b.createdAt).toLocaleDateString()}</p>
+      `).join('');
+    })
+    .catch(err => console.error('Detailed stats error:', err));
+}
+
 // Load my parking spaces
 function loadMySpaces() {
   fetch(getApiUrl(`/api/parking/owner/${ownerId}`))
@@ -376,8 +573,8 @@ function loadMySpaces() {
           <div class="image-preview">
             ${space.images.map(img => `<img src="${getApiUrl(img)}" alt="Space">`).join('')}
           </div>
-          <button class="btn-edit" onclick="editSpace('${space._id}')">Edit</button>
-          <button class="btn-delete" onclick="deleteSpace('${space._id}')">Delete</button>
+          <button class="btn-edit" onclick="editSpace('${space._id}')">✏️ Edit</button>
+          <button class="btn-delete" onclick="deleteSpace('${space._id}')">🗑️ Delete</button>
         </div>
       `).join('');
     })
@@ -448,31 +645,35 @@ function deleteSpace(spaceId) {
     });
 }
 
-// Load bookings
-function loadBookings() {
+// Load inbox bookings
+function loadInbox() {
   fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
     .then(res => res.json())
     .then(data => {
-      const list = document.getElementById('bookingsList');
+      const list = document.getElementById('inboxList');
+      const pendingCount = data.filter(b => b.status === 'pending').length;
+      
+      // Update notification badge
+      document.getElementById('notificationBadge').innerText = pendingCount;
       
       if (data.length === 0) {
-        list.innerHTML = '<div class="card">No bookings yet.</div>';
+        list.innerHTML = '<div class="inbox-card"><p>No bookings yet</p></div>';
         return;
       }
       
       list.innerHTML = data.map(booking => `
-        <div class="card">
-          <h4>Driver: ${booking.driverName || 'Unknown'}</h4>
-          <p>Status: <b>${booking.status}</b></p>
-          <p>Date: ${new Date(booking.createdAt).toLocaleString()}</p>
+        <div class="inbox-card ${booking.status === 'pending' ? 'pending' : ''}">
+          <h4>🚗 ${booking.driverName || 'Unknown Driver'}</h4>
+          <p><b>Status:</b> ${booking.status}</p>
+          <p><b>Date:</b> ${new Date(booking.createdAt).toLocaleString()}</p>
           ${booking.status === 'pending' ? `
-            <button class="btn-edit" onclick="confirmBooking('${booking._id}')">Confirm</button>
-            <button class="btn-delete" onclick="declineBooking('${booking._id}')">Decline</button>
+            <button class="btn-confirm" onclick="confirmBooking('${booking._id}')">✅ Confirm</button>
+            <button class="btn-decline" onclick="declineBooking('${booking._id}')">❌ Decline</button>
           ` : ''}
         </div>
       `).join('');
     })
-    .catch(err => console.error('Load bookings error:', err));
+    .catch(err => console.error('Load inbox error:', err));
 }
 
 // Confirm booking
@@ -481,7 +682,8 @@ function confirmBooking(id) {
     .then(res => res.json())
     .then(data => {
       alert('Booking confirmed! OTP: ' + data.otp);
-      loadBookings();
+      loadInbox();
+      loadDashboardStats();
     });
 }
 
@@ -490,7 +692,8 @@ function declineBooking(id) {
   fetch(getApiUrl(`/api/booking/decline/${id}`), { method: 'POST' })
     .then(() => {
       alert('Booking declined');
-      loadBookings();
+      loadInbox();
+      loadDashboardStats();
     });
 }
 
@@ -504,6 +707,10 @@ function logout() {
 
 // Load initial data
 loadDashboardStats();
+loadInbox();
+
+// Auto-refresh inbox every 30 seconds
+setInterval(loadInbox, 30000);
 </script>
 
 </body>
