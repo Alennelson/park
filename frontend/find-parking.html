@@ -272,28 +272,84 @@ function confirmComplete(){
   completePayment(total,minutes);
 }
 
-async function completePayment(total,minutes){
-  const res=await fetch(getApiUrl("/api/payment/create-order"),{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({bookingId:currentBooking._id,amount:total})
-  });
+async function completePayment(total, minutes) {
+  try {
+    // Create Razorpay order
+    const res = await fetch(getApiUrl("/api/payment/create-order"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        bookingId: currentBooking._id, 
+        amount: total 
+      })
+    });
 
-  const data=await res.json();
-
-  const rzp=new Razorpay({
-    key:"rzp_test_1234567890",
-    amount:data.amount,
-    currency:"INR",
-    name:"ASP Parking",
-    order_id:data.orderId,
-    handler:async()=>{
-      await fetch(getApiUrl(`/api/payment/complete/${currentBooking._id}`),{method:"POST"});
-      priceText.innerText=`Payment Success\nTime: ${minutes} min\nPaid: ₹${total}`;
+    const orderData = await res.json();
+    
+    if (!orderData.orderId) {
+      alert("Failed to create payment order");
+      return;
     }
-  });
 
-  rzp.open();
+    // Razorpay payment options
+    const options = {
+      key: orderData.keyId,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: "Parkify",
+      description: `Parking Payment - ${minutes} minutes`,
+      order_id: orderData.orderId,
+      handler: async function (response) {
+        // Verify payment
+        const verifyRes = await fetch(getApiUrl("/api/payment/verify"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature
+          })
+        });
+
+        const verifyData = await verifyRes.json();
+
+        if (verifyData.success) {
+          // Complete booking
+          await fetch(getApiUrl(`/api/payment/complete/${currentBooking._id}`), {
+            method: "POST"
+          });
+
+          clearInterval(timerInterval);
+          priceText.innerText = `✅ Payment Success!\nTime: ${minutes} min\nPaid: ₹${total}`;
+          
+          setTimeout(() => {
+            window.location.href = "dashboard.html";
+          }, 3000);
+        } else {
+          alert("Payment verification failed");
+        }
+      },
+      prefill: {
+        name: localStorage.getItem("name") || "User",
+        email: localStorage.getItem("email") || "",
+      },
+      theme: {
+        color: "#FFD400"
+      },
+      modal: {
+        ondismiss: function() {
+          alert("Payment cancelled");
+        }
+      }
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
+
+  } catch (err) {
+    console.error("Payment error:", err);
+    alert("Payment failed. Please try again.");
+  }
 }
 </script>
 
