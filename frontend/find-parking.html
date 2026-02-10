@@ -274,6 +274,8 @@ function confirmComplete(){
 
 async function completePayment(total, minutes) {
   try {
+    console.log("Starting payment process...", { total, minutes, bookingId: currentBooking._id });
+    
     // Create Razorpay order
     const res = await fetch(getApiUrl("/api/payment/create-order"), {
       method: "POST",
@@ -284,12 +286,17 @@ async function completePayment(total, minutes) {
       })
     });
 
+    console.log("Order response status:", res.status);
     const orderData = await res.json();
+    console.log("Order data received:", orderData);
     
     if (!orderData.orderId) {
-      alert("Failed to create payment order");
+      console.error("No orderId in response:", orderData);
+      alert("Failed to create payment order: " + (orderData.error || "Unknown error"));
       return;
     }
+
+    console.log("Opening Razorpay with key:", orderData.keyId);
 
     // Razorpay payment options
     const options = {
@@ -300,6 +307,8 @@ async function completePayment(total, minutes) {
       description: `Parking Payment - ${minutes} minutes`,
       order_id: orderData.orderId,
       handler: async function (response) {
+        console.log("Payment successful, verifying...", response);
+        
         // Verify payment
         const verifyRes = await fetch(getApiUrl("/api/payment/verify"), {
           method: "POST",
@@ -312,8 +321,11 @@ async function completePayment(total, minutes) {
         });
 
         const verifyData = await verifyRes.json();
+        console.log("Verification result:", verifyData);
 
         if (verifyData.success) {
+          console.log("Payment verified, completing booking...");
+          
           // Complete booking
           await fetch(getApiUrl(`/api/payment/complete/${currentBooking._id}`), {
             method: "POST"
@@ -326,7 +338,8 @@ async function completePayment(total, minutes) {
             window.location.href = "dashboard.html";
           }, 3000);
         } else {
-          alert("Payment verification failed");
+          console.error("Payment verification failed:", verifyData);
+          alert("Payment verification failed: " + (verifyData.error || "Unknown error"));
         }
       },
       prefill: {
@@ -338,17 +351,20 @@ async function completePayment(total, minutes) {
       },
       modal: {
         ondismiss: function() {
+          console.log("Payment cancelled by user");
           alert("Payment cancelled");
         }
       }
     };
 
+    console.log("Initializing Razorpay...");
     const rzp = new Razorpay(options);
     rzp.open();
+    console.log("Razorpay popup opened");
 
   } catch (err) {
     console.error("Payment error:", err);
-    alert("Payment failed. Please try again.");
+    alert("Payment failed: " + err.message);
   }
 }
 </script>
