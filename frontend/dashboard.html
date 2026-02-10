@@ -224,25 +224,54 @@
 
     .inbox-header h3 {
       font-size: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .notification-icon {
+      position: relative;
+      font-size: 28px;
+      cursor: pointer;
+      animation: ring 2s infinite;
+    }
+
+    @keyframes ring {
+      0%, 100% { transform: rotate(0deg); }
+      10%, 30% { transform: rotate(-10deg); }
+      20%, 40% { transform: rotate(10deg); }
     }
 
     .notification-badge {
       background: #ff4444;
       color: white;
       border-radius: 50%;
-      width: 24px;
-      height: 24px;
+      min-width: 20px;
+      height: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: bold;
+      padding: 0 5px;
+      position: absolute;
+      top: -5px;
+      right: -5px;
       animation: pulse 2s infinite;
     }
 
     @keyframes pulse {
       0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
+      50% { transform: scale(1.15); }
+    }
+
+    .notification-badge.has-new {
+      animation: pulse 1s infinite, glow 1.5s infinite;
+    }
+
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 5px #ff4444; }
+      50% { box-shadow: 0 0 15px #ff4444, 0 0 25px #ff4444; }
     }
 
     .inbox-card {
@@ -459,8 +488,11 @@
   <!-- RIGHT SIDEBAR INBOX -->
   <div class="right-sidebar">
     <div class="inbox-header">
-      <h3>📬 Inbox</h3>
-      <div class="notification-badge" id="notificationBadge">0</div>
+      <h3>Inbox</h3>
+      <div class="notification-icon">
+        🔔
+        <div class="notification-badge" id="notificationBadge">0</div>
+      </div>
     </div>
     <div id="inboxList"></div>
   </div>
@@ -646,6 +678,8 @@ function deleteSpace(spaceId) {
 }
 
 // Load inbox bookings
+let previousPendingCount = 0;
+
 function loadInbox() {
   fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
     .then(res => res.json())
@@ -654,12 +688,29 @@ function loadInbox() {
       const pendingCount = data.filter(b => b.status === 'pending').length;
       
       // Update notification badge
-      document.getElementById('notificationBadge').innerText = pendingCount;
+      const badge = document.getElementById('notificationBadge');
+      badge.innerText = pendingCount;
+      
+      // Add special styling if there are new bookings
+      if (pendingCount > previousPendingCount && previousPendingCount > 0) {
+        badge.classList.add('has-new');
+        // Play notification sound (optional)
+        playNotificationSound();
+        // Show browser notification
+        showBrowserNotification(pendingCount);
+      } else if (pendingCount === 0) {
+        badge.classList.remove('has-new');
+      }
+      
+      previousPendingCount = pendingCount;
       
       if (data.length === 0) {
         list.innerHTML = '<div class="inbox-card"><p>No bookings yet</p></div>';
         return;
       }
+      
+      // Sort by date, newest first
+      data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
       list.innerHTML = data.map(booking => `
         <div class="inbox-card ${booking.status === 'pending' ? 'pending' : ''}">
@@ -674,6 +725,42 @@ function loadInbox() {
       `).join('');
     })
     .catch(err => console.error('Load inbox error:', err));
+}
+
+// Play notification sound
+function playNotificationSound() {
+  // Create a simple beep sound
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  oscillator.frequency.value = 800;
+  oscillator.type = 'sine';
+  
+  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+  
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 0.5);
+}
+
+// Show browser notification
+function showBrowserNotification(count) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('New Booking Request!', {
+      body: `You have ${count} pending booking request${count > 1 ? 's' : ''}`,
+      icon: '🅿️',
+      badge: '🔔'
+    });
+  }
+}
+
+// Request notification permission on load
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
 }
 
 // Confirm booking
