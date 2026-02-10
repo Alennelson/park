@@ -6,240 +6,504 @@
   <script src="config.js"></script>
 
   <style>
-    body {
+    * {
       margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
       font-family: Arial, sans-serif;
       background: #FFD400;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
+      padding: 20px;
     }
 
     .phone {
-      width: 360px;
+      width: 100%;
+      max-width: 400px;
       height: 700px;
       background: #FFD400;
       border-radius: 30px;
       box-shadow: 0 20px 50px rgba(0,0,0,0.4);
-      padding: 20px;
-      position: relative;
-      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
+    /* TOP BAR */
     .top-bar {
+      background: #FFC800;
+      padding: 15px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
-    .inbox {
-      font-size: 26px;
+    .logout-btn {
+      background: #ff4444;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 8px;
       cursor: pointer;
+      font-size: 14px;
     }
 
+    /* CONTENT AREA */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    /* MENU BAR */
+    .menu-bar {
+      background: #FFC800;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      border-top: 2px solid #FFB000;
+    }
+
+    .menu-item {
+      text-align: center;
+      cursor: pointer;
+      padding: 5px;
+      flex: 1;
+      transition: background 0.3s;
+    }
+
+    .menu-item:hover {
+      background: #FFB000;
+    }
+
+    .menu-item.active {
+      background: #FFB000;
+      border-radius: 10px;
+    }
+
+    .menu-icon {
+      font-size: 24px;
+      display: block;
+    }
+
+    .menu-label {
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    /* USER BOX */
     .user-box {
       background: #FFC800;
       padding: 15px;
       border-radius: 15px;
-      margin: 15px 0;
+      margin-bottom: 20px;
     }
 
-    .btn {
-      width: 100%;
-      height: 110px;
-      border-radius: 20px;
-      border: none;
-      font-size: 18px;
+    /* STATS GRID */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 28px;
       font-weight: bold;
-      margin-bottom: 15px;
-      cursor: pointer;
+      color: #333;
     }
 
-    .register { background: #000; color: #fff; }
-    .find { background: #fff; color: #000; }
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
 
+    /* SECTION */
     .section {
-      margin-top: 20px;
+      display: none;
     }
 
+    .section.active {
+      display: block;
+    }
+
+    /* CARD */
     .card {
-      background: #fff;
-      padding: 10px;
-      border-radius: 10px;
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
       margin-bottom: 10px;
     }
 
-    .card button {
-      margin-top: 5px;
-      width: 48%;
-      padding: 6px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
+    .card h4 {
+      margin-bottom: 10px;
+      color: #333;
     }
 
-    .confirm { background: green; color: white; }
-    .decline { background: red; color: white; }
+    .card button {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px 5px 0 0;
+      font-size: 14px;
+    }
+
+    .btn-edit {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .btn-delete {
+      background: #f44336;
+      color: white;
+    }
+
+    .btn-primary {
+      background: #000;
+      color: white;
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+    }
+
+    /* FORM */
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .image-preview {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+      flex-wrap: wrap;
+    }
+
+    .image-preview img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
 
 <div class="phone">
-
   <!-- TOP BAR -->
   <div class="top-bar">
-    <h3>Dashboard</h3>
-    <div class="inbox" onclick="toggleInbox()">📩</div>
+    <h3>Parkify Dashboard</h3>
+    <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 
-  <!-- USER INFO -->
-  <div class="user-box">
-    <b id="name">Name</b><br>
-    <span id="email"></span>
+  <!-- CONTENT AREA -->
+  <div class="content">
+    <!-- DASHBOARD SECTION -->
+    <div id="dashboardSection" class="section active">
+      <div class="user-box">
+        <b id="userName">Loading...</b><br>
+        <span id="userEmail"></span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="totalBookings">0</div>
+          <div class="stat-label">Total Bookings</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="activeBookings">0</div>
+          <div class="stat-label">Active Now</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalHours">0</div>
+          <div class="stat-label">Total Hours</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">₹<span id="totalEarnings">0</span></div>
+          <div class="stat-label">Total Earnings</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>Quick Actions</h4>
+        <button class="btn-primary" onclick="showSection('mySpacesSection')">Manage My Spaces</button>
+        <button class="btn-primary" onclick="window.location.href='register-parking.html'">Register New Space</button>
+        <button class="btn-primary" onclick="window.location.href='find-parking.html'">Find Parking</button>
+      </div>
+    </div>
+
+    <!-- MY SPACES SECTION -->
+    <div id="mySpacesSection" class="section">
+      <h3>My Parking Spaces</h3>
+      <div id="spacesList"></div>
+    </div>
+
+    <!-- EDIT SPACE SECTION -->
+    <div id="editSpaceSection" class="section">
+      <h3>Edit Parking Space</h3>
+      <div class="card">
+        <input type="hidden" id="editSpaceId">
+        <label>Price (₹/hour)</label>
+        <input type="number" id="editPrice" placeholder="Price per hour">
+        
+        <label>Description</label>
+        <textarea id="editNotes" placeholder="Description and notes"></textarea>
+        
+        <label>Current Images</label>
+        <div id="currentImages" class="image-preview"></div>
+        
+        <button class="btn-primary" onclick="updateSpace()">Save Changes</button>
+        <button class="btn-primary" style="background: #666;" onclick="showSection('mySpacesSection')">Cancel</button>
+      </div>
+    </div>
+
+    <!-- BOOKINGS SECTION -->
+    <div id="bookingsSection" class="section">
+      <h3>Booking Requests</h3>
+      <div id="bookingsList"></div>
+    </div>
   </div>
 
-  <!-- BUTTONS -->
-  <button class="btn register" onclick="openRegister()">🏠 Register Space</button>
-  <button class="btn find" onclick="openFind()">🚗 Find Parking</button>
-  <button class="btn find" onclick="toggleActivities()">📊 Activities</button>
- <div class="section" id="activitySection" style="display:none;">
-  <h4>📊 Activities</h4>
-  <div id="activityList"></div>
-</div>
-
-  <!-- INBOX -->
-  <div class="section" id="inboxSection" style="display:none;">
-    <h4>📩 Booking Requests</h4>
-    <div id="inboxList"></div>
+  <!-- MENU BAR -->
+  <div class="menu-bar">
+    <div class="menu-item active" onclick="showSection('dashboardSection')">
+      <span class="menu-icon">🏠</span>
+      <div class="menu-label">Dashboard</div>
+    </div>
+    <div class="menu-item" onclick="showSection('mySpacesSection')">
+      <span class="menu-icon">🅿️</span>
+      <div class="menu-label">My Spaces</div>
+    </div>
+    <div class="menu-item" onclick="showSection('bookingsSection')">
+      <span class="menu-icon">📋</span>
+      <div class="menu-label">Bookings</div>
+    </div>
   </div>
-
-  <!-- HISTORY -->
-  <div class="section">
-    <h4>📜 Booking History</h4>
-    <div id="historyList"></div>
-  </div>
-
 </div>
 
 <script>
 const ownerId = localStorage.getItem("ownerId");
 
-/* LOAD USER INFO */
-document.getElementById("name").innerText =
-  localStorage.getItem("name") || "User";
+// Load user info
+document.getElementById("userName").innerText = localStorage.getItem("name") || "User";
+document.getElementById("userEmail").innerText = localStorage.getItem("email") || "";
 
-document.getElementById("email").innerText =
-  localStorage.getItem("email") || "";
-
-/* NAVIGATION */
-function openRegister() {
-  window.location.href = "register-parking.html";
-}
-function openFind() {
-  window.location.href = "find-parking.html";
-}
-
-/* TOGGLE INBOX */
-function toggleInbox() {
-  const section = document.getElementById("inboxSection");
-  section.style.display = section.style.display === "none" ? "block" : "none";
-  loadInbox();
-}
-
-/* TOGGLE ACTIVITIES */
-function toggleActivities() {
-  const section = document.getElementById("activitySection");
-  section.style.display = section.style.display === "none" ? "block" : "none";
-  loadActivities();
+// Show section and update menu
+function showSection(sectionId) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  
+  document.getElementById(sectionId).classList.add('active');
+  
+  if (sectionId === 'dashboardSection') {
+    document.querySelectorAll('.menu-item')[0].classList.add('active');
+    loadDashboardStats();
+  } else if (sectionId === 'mySpacesSection') {
+    document.querySelectorAll('.menu-item')[1].classList.add('active');
+    loadMySpaces();
+  } else if (sectionId === 'bookingsSection') {
+    document.querySelectorAll('.menu-item')[2].classList.add('active');
+    loadBookings();
+  }
 }
 
-/* LOAD ACTIVITIES */
-function loadActivities() {
+// Load dashboard statistics
+function loadDashboardStats() {
   fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
     .then(res => res.json())
     .then(data => {
-      const box = document.getElementById("activityList");
-      box.innerHTML = "";
+      const total = data.length;
+      const active = data.filter(b => b.status === 'active').length;
+      
+      let totalHours = 0;
+      let totalEarnings = 0;
+      
+      data.forEach(booking => {
+        if (booking.startTime && booking.endTime) {
+          const hours = (new Date(booking.endTime) - new Date(booking.startTime)) / (1000 * 60 * 60);
+          totalHours += hours;
+          totalEarnings += hours * (booking.price || 0);
+        }
+      });
+      
+      document.getElementById('totalBookings').innerText = total;
+      document.getElementById('activeBookings').innerText = active;
+      document.getElementById('totalHours').innerText = Math.round(totalHours);
+      document.getElementById('totalEarnings').innerText = Math.round(totalEarnings);
+    })
+    .catch(err => console.error('Stats error:', err));
+}
 
+// Load my parking spaces
+function loadMySpaces() {
+  fetch(getApiUrl(`/api/parking/owner/${ownerId}`))
+    .then(res => res.json())
+    .then(data => {
+      const list = document.getElementById('spacesList');
+      
       if (data.length === 0) {
-        box.innerHTML = "<p>No activities yet</p>";
+        list.innerHTML = '<div class="card">No parking spaces registered yet.</div>';
         return;
       }
-
-      data.forEach(b => {
-        box.innerHTML += `
-          <div class="card">
-            Driver: <b>${b.driverName}</b><br>
-            Status: <b>${b.status}</b><br>
-            Date: ${new Date(b.createdAt).toLocaleDateString()}
+      
+      list.innerHTML = data.map(space => `
+        <div class="card">
+          <h4>₹${space.price}/hour</h4>
+          <p>${space.notes || 'No description'}</p>
+          <div class="image-preview">
+            ${space.images.map(img => `<img src="${getApiUrl(img)}" alt="Space">`).join('')}
           </div>
-        `;
-      });
+          <button class="btn-edit" onclick="editSpace('${space._id}')">Edit</button>
+          <button class="btn-delete" onclick="deleteSpace('${space._id}')">Delete</button>
+        </div>
+      `).join('');
     })
-    .catch(() => {
-      document.getElementById("activityList").innerHTML = "<p>Error loading activities</p>";
+    .catch(err => console.error('Load spaces error:', err));
+}
+
+// Edit space
+function editSpace(spaceId) {
+  fetch(getApiUrl(`/api/parking/${spaceId}`))
+    .then(res => res.json())
+    .then(space => {
+      document.getElementById('editSpaceId').value = space._id;
+      document.getElementById('editPrice').value = space.price;
+      document.getElementById('editNotes').value = space.notes;
+      
+      const imagesDiv = document.getElementById('currentImages');
+      imagesDiv.innerHTML = space.images.map(img => 
+        `<img src="${getApiUrl(img)}" alt="Space">`
+      ).join('');
+      
+      showSection('editSpaceSection');
     });
 }
 
-/* LOAD INBOX BOOKINGS */
-function loadInbox() {
+// Update space
+function updateSpace() {
+  const spaceId = document.getElementById('editSpaceId').value;
+  const price = document.getElementById('editPrice').value;
+  const notes = document.getElementById('editNotes').value;
+  
+  fetch(getApiUrl(`/api/parking/${spaceId}`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ price, notes })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert('Space updated successfully!');
+        showSection('mySpacesSection');
+      } else {
+        alert('Update failed');
+      }
+    })
+    .catch(err => {
+      console.error('Update error:', err);
+      alert('Error updating space');
+    });
+}
+
+// Delete space
+function deleteSpace(spaceId) {
+  if (!confirm('Are you sure you want to delete this parking space?')) return;
+  
+  fetch(getApiUrl(`/api/parking/${spaceId}`), { method: 'DELETE' })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert('Space deleted successfully!');
+        loadMySpaces();
+      } else {
+        alert('Delete failed');
+      }
+    })
+    .catch(err => {
+      console.error('Delete error:', err);
+      alert('Error deleting space');
+    });
+}
+
+// Load bookings
+function loadBookings() {
   fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
     .then(res => res.json())
     .then(data => {
-      const box = document.getElementById("inboxList");
-      box.innerHTML = "";
-
-      data.forEach(b => {
-        box.innerHTML += `
-          <div class="card">
-            Driver: <b>${b.driverName}</b><br>
-            Status: ${b.status}<br>
-
-            <button class="confirm" onclick="confirmBooking('${b._id}')">Confirm</button>
-            <button class="decline" onclick="declineBooking('${b._id}')">Decline</button>
-          </div>
-        `;
-      });
-    });
+      const list = document.getElementById('bookingsList');
+      
+      if (data.length === 0) {
+        list.innerHTML = '<div class="card">No bookings yet.</div>';
+        return;
+      }
+      
+      list.innerHTML = data.map(booking => `
+        <div class="card">
+          <h4>Driver: ${booking.driverName || 'Unknown'}</h4>
+          <p>Status: <b>${booking.status}</b></p>
+          <p>Date: ${new Date(booking.createdAt).toLocaleString()}</p>
+          ${booking.status === 'pending' ? `
+            <button class="btn-edit" onclick="confirmBooking('${booking._id}')">Confirm</button>
+            <button class="btn-delete" onclick="declineBooking('${booking._id}')">Decline</button>
+          ` : ''}
+        </div>
+      `).join('');
+    })
+    .catch(err => console.error('Load bookings error:', err));
 }
 
-/* CONFIRM BOOKING → SHOW OTP */
+// Confirm booking
 function confirmBooking(id) {
-  fetch(getApiUrl(`/api/booking/confirm/${id}`), { method: "POST" })
+  fetch(getApiUrl(`/api/booking/confirm/${id}`), { method: 'POST' })
     .then(res => res.json())
     .then(data => {
-      alert("OTP for driver: " + data.otp);
-      loadInbox();
+      alert('Booking confirmed! OTP: ' + data.otp);
+      loadBookings();
     });
 }
 
-/* DECLINE */
+// Decline booking
 function declineBooking(id) {
-  fetch(getApiUrl(`/api/booking/decline/${id}`), { method: "POST" })
-    .then(() => loadInbox());
-}
-
-/* LOAD HISTORY */
-function loadHistory() {
-  fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
-    .then(res => res.json())
-    .then(data => {
-      const box = document.getElementById("historyList");
-      box.innerHTML = "";
-
-      data.forEach(b => {
-        box.innerHTML += `
-          <div class="card">
-            Driver: <b>${b.driverName}</b><br>
-            Status: ${b.status}
-          </div>
-        `;
-      });
+  fetch(getApiUrl(`/api/booking/decline/${id}`), { method: 'POST' })
+    .then(() => {
+      alert('Booking declined');
+      loadBookings();
     });
 }
 
-loadHistory();
+// Logout
+function logout() {
+  if (confirm('Are you sure you want to logout?')) {
+    localStorage.clear();
+    window.location.href = 'login.html';
+  }
+}
+
+// Load initial data
+loadDashboardStats();
 </script>
 
 </body>

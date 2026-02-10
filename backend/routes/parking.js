@@ -64,4 +64,61 @@ router.get("/all", async (req, res) => {
   }
 });
 
+/* ================= GET PARKING BY OWNER ================= */
+router.get("/owner/:ownerId", async (req, res) => {
+  try {
+    const spaces = await Parking.find({ ownerId: req.params.ownerId });
+    res.json(spaces);
+  } catch (err) {
+    console.error("GET OWNER PARKING ERROR:", err);
+    res.status(500).json([]);
+  }
+});
+
+/* ================= GET SINGLE PARKING ================= */
+router.get("/:id", async (req, res) => {
+  try {
+    const space = await Parking.findById(req.params.id);
+    if (!space) return res.status(404).json({ error: "Space not found" });
+    res.json(space);
+  } catch (err) {
+    console.error("GET SINGLE PARKING ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/* ================= UPDATE PARKING ================= */
+router.put("/:id", async (req, res) => {
+  try {
+    const { price, notes } = req.body;
+    
+    const space = await Parking.findByIdAndUpdate(
+      req.params.id,
+      { price, notes },
+      { new: true }
+    );
+    
+    if (!space) return res.status(404).json({ success: false, error: "Space not found" });
+    
+    res.json({ success: true, space });
+  } catch (err) {
+    console.error("UPDATE PARKING ERROR:", err);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+});
+
+/* ================= DELETE PARKING ================= */
+router.delete("/:id", async (req, res) => {
+  try {
+    const space = await Parking.findByIdAndDelete(req.params.id);
+    
+    if (!space) return res.status(404).json({ success: false, error: "Space not found" });
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error("DELETE PARKING ERROR:", err);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+});
+
 module.exports = router;   // ⭐ ALSO REQUIRED
