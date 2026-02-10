@@ -15,6 +15,13 @@ router.post("/create-order", async (req, res) => {
   try {
     const { amount, bookingId } = req.body;
 
+    console.log("Creating order with:", { amount, bookingId });
+    console.log("Using Razorpay key:", process.env.RAZORPAY_KEY_ID || "rzp_test_SCqhmRjFdQCDYM");
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, error: "Invalid amount" });
+    }
+
     const order = await razorpay.orders.create({
       amount: amount * 100, // ₹ to paise
       currency: "INR",
@@ -24,7 +31,7 @@ router.post("/create-order", async (req, res) => {
       }
     });
 
-    console.log("Order created:", order.id);
+    console.log("Order created successfully:", order.id);
     res.json({
       orderId: order.id,
       amount: order.amount,
@@ -33,7 +40,16 @@ router.post("/create-order", async (req, res) => {
     });
   } catch (err) {
     console.error("Create order error:", err);
-    res.status(500).json({ success: false, error: err.message });
+    console.error("Error details:", {
+      message: err.message,
+      statusCode: err.statusCode,
+      error: err.error
+    });
+    res.status(500).json({ 
+      success: false, 
+      error: err.message,
+      details: err.error ? err.error.description : "Unknown error"
+    });
   }
 });
 
