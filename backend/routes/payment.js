@@ -22,10 +22,13 @@ router.post("/create-order", async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid amount" });
     }
 
+    // Create shorter receipt (max 40 characters)
+    const shortReceipt = `rcpt_${Date.now()}`;
+
     const order = await razorpay.orders.create({
       amount: amount * 100, // ₹ to paise
       currency: "INR",
-      receipt: `booking_${bookingId}_${Date.now()}`,
+      receipt: shortReceipt,
       notes: {
         bookingId: bookingId
       }
