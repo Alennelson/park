@@ -527,6 +527,22 @@ document.getElementById("settingsName").innerText = localStorage.getItem("name")
 document.getElementById("settingsEmail").innerText = localStorage.getItem("email") || "";
 document.getElementById("settingsId").innerText = ownerId || "N/A";
 
+// Load wallet balance
+function loadWallet() {
+  fetch(getApiUrl(`/api/wallet/${ownerId}`))
+    .then(res => res.json())
+    .then(wallet => {
+      document.getElementById('walletBalance').innerText = wallet.balance || 0;
+      document.getElementById('totalEarnings').innerText = wallet.totalEarnings || 0;
+      
+      if (wallet.lastTransaction) {
+        const date = new Date(wallet.lastTransaction);
+        document.getElementById('lastTransaction').innerText = date.toLocaleDateString();
+      }
+    })
+    .catch(err => console.error('Wallet error:', err));
+}
+
 // Show section and update menu
 function showSection(sectionId) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -819,10 +835,14 @@ function logout() {
 
 // Load initial data
 loadDashboardStats();
+loadWallet();
 loadInbox();
 
-// Auto-refresh inbox every 30 seconds
-setInterval(loadInbox, 30000);
+// Auto-refresh inbox and wallet every 30 seconds
+setInterval(() => {
+  loadInbox();
+  loadWallet();
+}, 30000);
 </script>
 
 </body>

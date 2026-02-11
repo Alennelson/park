@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const BookingSchema = new mongoose.Schema({
   parkingId: String,
   userId: String,
+  price: Number, // Price per hour from parking space
 
   status: {
     type: String,
@@ -13,7 +14,7 @@ const BookingSchema = new mongoose.Schema({
   otp: String,
   startTime: Date,
   endTime: Date,
-  totalPrice: Number,
+  totalAmount: Number, // Total amount paid
 
   createdAt: { type: Date, default: Date.now },
 });

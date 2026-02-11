@@ -9,11 +9,19 @@ const Parking = require("../models/Parking");
 /* 1️⃣ DRIVER PRE-BOOK */
 router.post("/create", async (req, res) => {
   try {
-    const { parkingId, userId } = req.body;
+    const { parkingId, userId, price } = req.body;
+
+    // Get parking details to get price if not provided
+    let bookingPrice = price;
+    if (!bookingPrice) {
+      const parking = await Parking.findById(parkingId);
+      bookingPrice = parking ? parking.price : 50;
+    }
 
     const booking = new Booking({
       parkingId,
       userId,
+      price: bookingPrice,
       status: "pending"
     });
 

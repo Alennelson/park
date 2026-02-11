@@ -183,20 +183,28 @@ function loadParkingSpots(){
 }
 
 function showParkingInfo(spot){
+  const images = spot.images && spot.images.length > 0 
+    ? spot.images.map(img => `<img src="${getApiUrl(img)}" style="width:30%;height:70px;object-fit:cover;border-radius:6px;">`).join('')
+    : '<p style="font-size:12px;color:#666;">No images</p>';
+  
   infoPanel.innerHTML=`
     <b>👤 ${spot.ownerName}</b><br>
     <b>💰 ₹${spot.price}/hour</b><br>
-    <button class='book' onclick="preBook('${spot._id}')">Pre‑Book</button>`;
+    <p style="font-size:12px;margin:8px 0;color:#666;">${spot.notes || 'No description'}</p>
+    <div style="display:flex;gap:6px;justify-content:center;margin:8px 0;">
+      ${images}
+    </div>
+    <button class='book' onclick="preBook('${spot._id}', ${spot.price})">Pre‑Book</button>`;
   infoPanel.style.display="block";
 }
 
-function preBook(parkingId){
+function preBook(parkingId, price){
   const userId=localStorage.getItem("ownerId");
 
   fetch(getApiUrl("/api/booking/create"),{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({parkingId,userId})
+    body:JSON.stringify({parkingId, userId, price})
   }).then(()=>{
     infoPanel.style.display="none";
     statusPanel.style.display="block";
@@ -305,7 +313,10 @@ function startParkingTimer(){
   timerPanel.style.display="block";
   startTime=Date.now();
   
-  const pricePerHour = currentBooking?.price || 50;
+  // Get price from current booking's parking space
+  const pricePerHour = currentBooking?.parking?.price || currentBooking?.price || 50;
+  
+  console.log("Starting timer with price per hour:", pricePerHour);
 
   timerInterval=setInterval(()=>{
     const diff=Date.now()-startTime;
@@ -316,7 +327,7 @@ function startParkingTimer(){
     // Update timer display (HH:MM:SS)
     timer.innerText=String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');
     
-    // Calculate cost
+    // Calculate cost based on provider's price
     const totalMinutes = Math.ceil(diff/60000);
     const totalHours = Math.ceil(totalMinutes/60);
     const currentCost = totalHours * pricePerHour;
@@ -331,10 +342,14 @@ function confirmComplete(){
   const diff=Date.now()-startTime;
   const totalMinutes=Math.ceil(diff/60000);
   const totalHours=Math.ceil(totalMinutes/60);
-  const pricePerHour = currentBooking?.price || 50;
+  
+  // Use provider's actual price
+  const pricePerHour = currentBooking?.parking?.price || currentBooking?.price || 50;
   const total = totalHours * pricePerHour;
 
-  if(!confirm(`Confirm departure?\n\nTime: ${totalMinutes} minutes (${totalHours} hour${totalHours>1?'s':''})\nAmount: ₹${total}`)) return;
+  console.log("Completing payment:", { totalMinutes, totalHours, pricePerHour, total });
+
+  if(!confirm(`Confirm departure?\n\nTime: ${totalMinutes} minutes (${totalHours} hour${totalHours>1?'s':''})\nPrice: ₹${pricePerHour}/hour\nTotal Amount: ₹${total}`)) return;
 
   completePayment(total, totalMinutes);
 }
