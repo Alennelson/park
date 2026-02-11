@@ -740,6 +740,12 @@ function loadInbox() {
             <button class="btn-confirm" onclick="confirmBooking('${booking._id}')">✅ Confirm</button>
             <button class="btn-decline" onclick="declineBooking('${booking._id}')">❌ Decline</button>
           ` : ''}
+          ${booking.status === 'confirmed' && booking.otp ? `
+            <div style="background: #4CAF50; color: white; padding: 10px; border-radius: 8px; margin-top: 8px;">
+              <b>OTP:</b> <span style="font-size: 20px; letter-spacing: 3px;">${booking.otp}</span>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 5px;">Share this OTP with driver</p>
+          ` : ''}
         </div>
       `).join('');
     })

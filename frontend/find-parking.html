@@ -87,6 +87,18 @@
     .reach { background: black; color: white; }
     .otpBtn { background: green; color: white; }
     .complete { background: red; color: white; }
+    .cancel { background: #ff4444; color: white; }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .button-row button {
+      flex: 1;
+      margin-top: 0;
+    }
 
     .success {
       position: absolute;
@@ -116,16 +128,24 @@
 
   <div class="panel" id="statusPanel">
     <div id="statusText">Waiting for owner confirmation...</div>
+    <div id="otpDisplay" style="display:none; background: #4CAF50; color: white; padding: 15px; border-radius: 10px; margin: 10px 0;">
+      <h3 style="margin: 0 0 10px 0;">🔑 Your OTP</h3>
+      <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px;" id="otpCode">----</div>
+      <small>Show this to parking owner</small>
+    </div>
 
     <button class="reach" id="directionBtn" style="display:none;" onclick="openDirections()">Get Directions</button>
-
     <button class="reach" id="reachBtn" style="display:none;" onclick="confirmReached()">I Reached Location</button>
+    
+    <button class="cancel" onclick="cancelBooking()">❌ Cancel Booking</button>
   </div>
 
   <div class="panel" id="otpPanel">
     <h3>Enter 4‑Digit OTP</h3>
+    <p style="font-size: 12px; color: #666;">Ask the parking owner for OTP</p>
     <input id="otpInput" maxlength="4" style="width:100%;padding:10px;font-size:18px;">
     <button class="otpBtn" onclick="verifyOtp()">Verify & Start Parking</button>
+    <button class="cancel" onclick="cancelBooking()">❌ Cancel</button>
   </div>
 
   <div class="success" id="successScreen">
@@ -135,8 +155,11 @@
 
   <div class="panel" id="timerPanel">
     <h3>Parking Active</h3>
-    <div class="timer" id="timer">00:00</div>
-    <button class="complete" onclick="confirmComplete()">Complete Parking</button>
+    <div class="timer" id="timer">00:00:00</div>
+    <div style="font-size: 14px; color: #666; margin: 10px 0;">
+      <span id="currentCost">₹0</span> • <span id="elapsedTime">0 min</span>
+    </div>
+    <button class="complete" onclick="confirmComplete()">Complete Parking & Pay</button>
     <h3 id="priceText"></h3>
   </div>
 </div>
@@ -192,28 +215,65 @@ function watchBookingStatus(){
     const res=await fetch(getApiUrl(`/api/booking/driver/${userId}`));
     const b=await res.json();
 
-    if(!b){ statusPanel.style.display="none"; return; }
+    if(!b){ 
+      statusPanel.style.display="none";
+      otpPanel.style.display="none";
+      timerPanel.style.display="none";
+      return; 
+    }
 
     currentBooking=b;
-    statusPanel.style.display="block";
 
     if(b.status==="pending"){
-      statusText.innerText="Waiting for owner confirmation...";
+      statusPanel.style.display="block";
+      statusText.innerText="⏳ Waiting for owner confirmation...";
       directionBtn.style.display="none";
       reachBtn.style.display="none";
+      document.getElementById('otpDisplay').style.display="none";
     }
 
     if(b.status==="confirmed"){
-      statusText.innerText="Booking confirmed. Get directions.";
+      statusPanel.style.display="block";
+      statusText.innerText="✅ Booking confirmed!";
       directionBtn.style.display="block";
+      
+      // Show OTP to driver
+      if(b.otp){
+        document.getElementById('otpDisplay').style.display="block";
+        document.getElementById('otpCode').innerText=b.otp;
+      }
     }
 
     if(b.status==="active"){
       statusPanel.style.display="none";
-      startParkingTimer();
+      otpPanel.style.display="none";
+      if(!timerInterval) startParkingTimer();
     }
 
   },3000);
+}
+
+// Cancel booking function
+function cancelBooking(){
+  if(!confirm("Are you sure you want to cancel this booking?")) return;
+  
+  if(!currentBooking) return;
+  
+  fetch(getApiUrl(`/api/booking/cancel/${currentBooking._id}`),{
+    method:"POST"
+  })
+  .then(()=>{
+    alert("Booking cancelled successfully");
+    currentBooking=null;
+    statusPanel.style.display="none";
+    otpPanel.style.display="none";
+    timerPanel.style.display="none";
+    if(timerInterval) clearInterval(timerInterval);
+  })
+  .catch(err=>{
+    console.error("Cancel error:", err);
+    alert("Failed to cancel booking");
+  });
 }
 
 function openDirections(){
@@ -252,24 +312,43 @@ function verifyOtp(){
 }
 
 function startParkingTimer(){
+  if(timerInterval) return; // Prevent multiple timers
+  
   timerPanel.style.display="block";
   startTime=Date.now();
+  
+  const pricePerHour = currentBooking?.price || 50;
 
   timerInterval=setInterval(()=>{
     const diff=Date.now()-startTime;
-    const m=Math.floor(diff/60000);
+    const h=Math.floor(diff/3600000);
+    const m=Math.floor((diff%3600000)/60000);
     const s=Math.floor((diff%60000)/1000);
-    timer.innerText=String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');
+    
+    // Update timer display (HH:MM:SS)
+    timer.innerText=String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');
+    
+    // Calculate cost
+    const totalMinutes = Math.ceil(diff/60000);
+    const totalHours = Math.ceil(totalMinutes/60);
+    const currentCost = totalHours * pricePerHour;
+    
+    // Update cost display
+    document.getElementById('currentCost').innerText = `₹${currentCost}`;
+    document.getElementById('elapsedTime').innerText = `${totalMinutes} min`;
   },1000);
 }
 
 function confirmComplete(){
-  const minutes=Math.ceil((Date.now()-startTime)/60000);
-  const total=minutes*2;
+  const diff=Date.now()-startTime;
+  const totalMinutes=Math.ceil(diff/60000);
+  const totalHours=Math.ceil(totalMinutes/60);
+  const pricePerHour = currentBooking?.price || 50;
+  const total = totalHours * pricePerHour;
 
-  if(!confirm(`Confirm departure?\nTime: ${minutes} min\nAmount: ₹${total}`)) return;
+  if(!confirm(`Confirm departure?\n\nTime: ${totalMinutes} minutes (${totalHours} hour${totalHours>1?'s':''})\nAmount: ₹${total}`)) return;
 
-  completePayment(total,minutes);
+  completePayment(total, totalMinutes);
 }
 
 async function completePayment(total, minutes) {
