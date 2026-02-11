@@ -331,6 +331,14 @@
       .menu-label {
         display: none;
       }
+      
+      .main-content {
+        padding: 15px;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
     }
   </style>
 </head>
@@ -349,6 +357,16 @@
     <div class="menu-item" onclick="showSection('mySpacesSection')" title="My Spaces">
       <span class="menu-icon">🚗</span>
       <div class="menu-label">Spaces</div>
+    </div>
+    
+    <div class="menu-item" onclick="showSection('bookingsSection')" title="Bookings">
+      <span class="menu-icon">📋</span>
+      <div class="menu-label">Bookings</div>
+    </div>
+    
+    <div class="menu-item" onclick="showSection('paymentsSection')" title="Payments">
+      <span class="menu-icon">💰</span>
+      <div class="menu-label">Payments</div>
     </div>
     
     <div class="menu-item" onclick="showSection('statsSection')" title="Statistics">
@@ -484,6 +502,41 @@
       </div>
     </div>
 
+    <!-- BOOKINGS SECTION (Mobile Friendly) -->
+    <div id="bookingsSection" class="section">
+      <div class="top-bar">
+        <h2>📋 Booking Requests</h2>
+      </div>
+      <div id="bookingsList"></div>
+    </div>
+
+    <!-- PAYMENTS SECTION -->
+    <div id="paymentsSection" class="section">
+      <div class="top-bar">
+        <h2>💰 Payment Details</h2>
+      </div>
+      
+      <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <h3 style="color: white;">Wallet Summary</h3>
+        <div style="font-size: 32px; font-weight: bold; margin: 10px 0;">₹<span id="paymentWalletBalance">0</span></div>
+        <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px;">
+          <div>
+            <div style="opacity: 0.9;">Total Received</div>
+            <div style="font-size: 18px; font-weight: bold;">₹<span id="paymentTotalEarnings">0</span></div>
+          </div>
+          <div style="text-align: right;">
+            <div style="opacity: 0.9;">Company Commission (18%)</div>
+            <div style="font-size: 18px; font-weight: bold;">₹<span id="companyCommission">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>Payment History</h4>
+        <div id="paymentHistory"></div>
+      </div>
+    </div>
+
     <!-- SETTINGS SECTION -->
     <div id="settingsSection" class="section">
       <div class="top-bar">
@@ -557,11 +610,17 @@ function showSection(sectionId) {
   } else if (sectionId === 'mySpacesSection') {
     menuItems[1].classList.add('active');
     loadMySpaces();
-  } else if (sectionId === 'statsSection') {
+  } else if (sectionId === 'bookingsSection') {
     menuItems[2].classList.add('active');
+    loadBookingsSection();
+  } else if (sectionId === 'paymentsSection') {
+    menuItems[3].classList.add('active');
+    loadPaymentsSection();
+  } else if (sectionId === 'statsSection') {
+    menuItems[4].classList.add('active');
     loadDetailedStats();
   } else if (sectionId === 'settingsSection') {
-    menuItems[3].classList.add('active');
+    menuItems[5].classList.add('active');
   }
 }
 
@@ -823,6 +882,95 @@ function declineBooking(id) {
       loadInbox();
       loadDashboardStats();
     });
+}
+
+// Load bookings section (mobile friendly)
+function loadBookingsSection() {
+  fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
+    .then(res => res.json())
+    .then(data => {
+      const list = document.getElementById('bookingsList');
+      
+      if (data.length === 0) {
+        list.innerHTML = '<div class="card">No bookings yet</div>';
+        return;
+      }
+      
+      data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      list.innerHTML = data.map(booking => `
+        <div class="card">
+          <h4>🚗 ${booking.driverName || 'Unknown Driver'}</h4>
+          <p><b>Status:</b> ${booking.status}</p>
+          <p><b>Date:</b> ${new Date(booking.createdAt).toLocaleString()}</p>
+          ${booking.status === 'pending' ? `
+            <button class="btn-edit" onclick="confirmBooking('${booking._id}')">✅ Confirm</button>
+            <button class="btn-delete" onclick="declineBooking('${booking._id}')">❌ Decline</button>
+          ` : ''}
+          ${booking.status === 'confirmed' && booking.otp ? `
+            <div style="background: #4CAF50; color: white; padding: 10px; border-radius: 8px; margin-top: 8px;">
+              <b>OTP:</b> <span style="font-size: 20px; letter-spacing: 3px;">${booking.otp}</span>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 5px;">Share this OTP with driver</p>
+          ` : ''}
+        </div>
+      `).join('');
+    })
+    .catch(err => console.error('Load bookings error:', err));
+}
+
+// Load payments section
+function loadPaymentsSection() {
+  // Load wallet
+  fetch(getApiUrl(`/api/wallet/${ownerId}`))
+    .then(res => res.json())
+    .then(wallet => {
+      document.getElementById('paymentWalletBalance').innerText = wallet.balance || 0;
+      document.getElementById('paymentTotalEarnings').innerText = wallet.totalEarnings || 0;
+      
+      // Calculate company commission (18% of total earnings)
+      const commission = Math.round((wallet.totalEarnings || 0) * 0.18);
+      document.getElementById('companyCommission').innerText = commission;
+    });
+  
+  // Load transaction history
+  fetch(getApiUrl(`/api/wallet/${ownerId}/transactions`))
+    .then(res => res.json())
+    .then(transactions => {
+      const list = document.getElementById('paymentHistory');
+      
+      if (transactions.length === 0) {
+        list.innerHTML = '<p>No transactions yet</p>';
+        return;
+      }
+      
+      list.innerHTML = transactions.map(tx => `
+        <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <b>${tx.type === 'credit' ? '💰 Received' : '💸 Withdrawal'}</b>
+              <p style="font-size: 12px; color: #666; margin: 5px 0;">${tx.description}</p>
+              <small style="color: #999;">${new Date(tx.createdAt).toLocaleString()}</small>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 18px; font-weight: bold; color: ${tx.type === 'credit' ? '#4CAF50' : '#f44336'};">
+                ${tx.type === 'credit' ? '+' : '-'}₹${tx.amount}
+              </div>
+              <small style="color: #999;">Balance: ₹${tx.balanceAfter}</small>
+            </div>
+          </div>
+          ${tx.type === 'credit' && tx.bookingId ? `
+            <div style="background: #f5f5f5; padding: 8px; border-radius: 5px; margin-top: 8px; font-size: 12px;">
+              <b>Breakdown:</b><br>
+              Total Payment: ₹${Math.round(tx.amount / 0.82)}<br>
+              Your Share (82%): ₹${tx.amount}<br>
+              Company Commission (18%): ₹${Math.round(tx.amount / 0.82 * 0.18)}
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    })
+    .catch(err => console.error('Load transactions error:', err));
 }
 
 // Logout
