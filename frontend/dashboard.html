@@ -379,6 +379,25 @@
         </div>
       </div>
 
+      <!-- WALLET DISPLAY -->
+      <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-bottom: 20px;">
+        <h3 style="color: white; margin-bottom: 15px;">💰 Wallet Balance</h3>
+        <div style="font-size: 36px; font-weight: bold; margin: 10px 0;">₹<span id="walletBalance">0</span></div>
+        <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 14px;">
+          <div>
+            <div style="opacity: 0.9;">Total Earnings</div>
+            <div style="font-size: 18px; font-weight: bold;">₹<span id="totalEarnings">0</span></div>
+          </div>
+          <div style="text-align: right;">
+            <div style="opacity: 0.9;">Last Transaction</div>
+            <div style="font-size: 14px;" id="lastTransaction">-</div>
+          </div>
+        </div>
+        <button class="btn-primary" style="margin-top: 15px; background: white; color: #667eea;" onclick="showSection('walletSection')">
+          View Wallet Details
+        </button>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-value" id="totalBookings">0</div>

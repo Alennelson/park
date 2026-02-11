@@ -24,12 +24,15 @@ const authRoutes = require("./routes/auth");
 const ownerRoutes = require("./routes/owner");
 const bookingRoutes = require("./routes/bookingRoutes");
 const paymentRoutes = require("./routes/payment");
+const walletRoutes = require("./routes/wallet");
+
 app.use("/api/booking", require("./routes/bookingRoutes"));
 app.use("/api/parking", parkingRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/owner", ownerRoutes);
 app.use("/api/booking", bookingRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/wallet", walletRoutes);
 
 /* ================= FIXED BOOKING DRIVER ROUTE ================= */
 /* This is REQUIRED for:
@@ -65,10 +68,58 @@ app.get("/api/booking/driver/:userId", async (req, res) => {
 */
 app.post("/api/payment/complete/:bookingId", async (req, res) => {
   try {
+    const booking = await Booking.findById(req.params.bookingId).populate('parkingId');
+    
+    if (!booking) {
+      return res.status(404).json({ success: false, error: "Booking not found" });
+    }
+
+    // Calculate payment amount
+    const startTime = new Date(booking.startTime);
+    const endTime = new Date();
+    const hours = Math.ceil((endTime - startTime) / (1000 * 60 * 60));
+    const totalAmount = hours * (booking.price || 50);
+
+    // Update booking status
     await Booking.findByIdAndUpdate(req.params.bookingId, {
       status: "completed",
-      completedAt: new Date()
+      completedAt: endTime,
+      endTime: endTime,
+      totalAmount: totalAmount
     });
+
+    // Credit wallet (82% to provider)
+    if (booking.parkingId && booking.parkingId.ownerId) {
+      const Wallet = require("./models/Wallet");
+      const Transaction = require("./models/Transaction");
+      
+      let wallet = await Wallet.findOne({ ownerId: booking.parkingId.ownerId });
+      
+      if (!wallet) {
+        wallet = new Wallet({ ownerId: booking.parkingId.ownerId });
+      }
+      
+      const providerShare = Math.round(totalAmount * 0.82);
+      
+      wallet.balance += providerShare;
+      wallet.totalEarnings += providerShare;
+      wallet.lastTransaction = new Date();
+      await wallet.save();
+      
+      // Create transaction record
+      const transaction = new Transaction({
+        ownerId: booking.parkingId.ownerId,
+        type: 'credit',
+        amount: providerShare,
+        description: `Booking payment - ₹${totalAmount} (82% share)`,
+        bookingId: req.params.bookingId,
+        status: 'completed',
+        balanceAfter: wallet.balance
+      });
+      await transaction.save();
+      
+      console.log(`Payment completed: ₹${totalAmount}, Provider gets: ₹${providerShare}`);
+    }
 
     res.json({ success: true });
 
