@@ -128,11 +128,6 @@
 
   <div class="panel" id="statusPanel">
     <div id="statusText">Waiting for owner confirmation...</div>
-    <div id="otpDisplay" style="display:none; background: #4CAF50; color: white; padding: 15px; border-radius: 10px; margin: 10px 0;">
-      <h3 style="margin: 0 0 10px 0;">🔑 Your OTP</h3>
-      <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px;" id="otpCode">----</div>
-      <small>Show this to parking owner</small>
-    </div>
 
     <button class="reach" id="directionBtn" style="display:none;" onclick="openDirections()">Get Directions</button>
     <button class="reach" id="reachBtn" style="display:none;" onclick="confirmReached()">I Reached Location</button>
@@ -142,8 +137,8 @@
 
   <div class="panel" id="otpPanel">
     <h3>Enter 4‑Digit OTP</h3>
-    <p style="font-size: 12px; color: #666;">Ask the parking owner for OTP</p>
-    <input id="otpInput" maxlength="4" style="width:100%;padding:10px;font-size:18px;">
+    <p style="font-size: 12px; color: #666;">Ask the parking owner for the OTP code</p>
+    <input id="otpInput" maxlength="4" style="width:100%;padding:10px;font-size:18px;" placeholder="Enter OTP">
     <button class="otpBtn" onclick="verifyOtp()">Verify & Start Parking</button>
     <button class="cancel" onclick="cancelBooking()">❌ Cancel</button>
   </div>
@@ -229,19 +224,12 @@ function watchBookingStatus(){
       statusText.innerText="⏳ Waiting for owner confirmation...";
       directionBtn.style.display="none";
       reachBtn.style.display="none";
-      document.getElementById('otpDisplay').style.display="none";
     }
 
     if(b.status==="confirmed"){
       statusPanel.style.display="block";
-      statusText.innerText="✅ Booking confirmed!";
+      statusText.innerText="✅ Booking confirmed! Get directions to parking.";
       directionBtn.style.display="block";
-      
-      // Show OTP to driver
-      if(b.otp){
-        document.getElementById('otpDisplay').style.display="block";
-        document.getElementById('otpCode').innerText=b.otp;
-      }
     }
 
     if(b.status==="active"){
