@@ -241,13 +241,19 @@ function initMap(){
     zoom: 14
   });
 
-  // Create draggable red marker for location selection
+  // Create draggable location marker with emoji
   searchMarker = new google.maps.Marker({
     position: defaultCenter,
     map: map,
     draggable: true,
     icon: {
-      url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
+      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">' +
+        '<text x="24" y="36" font-size="40" text-anchor="middle">📍</text>' +
+        '</svg>'
+      ),
+      scaledSize: new google.maps.Size(48, 48),
+      anchor: new google.maps.Point(24, 48)
     },
     title: "Drag me to your location"
   });
@@ -349,7 +355,13 @@ function searchNearbyParking() {
           position: pos,
           map: map,
           icon: {
-            url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+              '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">' +
+              '<text x="24" y="36" font-size="40" text-anchor="middle">🅿️</text>' +
+              '</svg>'
+            ),
+            scaledSize: new google.maps.Size(48, 48),
+            anchor: new google.maps.Point(24, 48)
           },
           title: `${spot.ownerName} - ₹${spot.price}/hr - ${spot.distance}km away`
         });
