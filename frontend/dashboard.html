@@ -685,6 +685,9 @@ function loadMySpaces() {
   fetch(getApiUrl(`/api/parking/owner/${ownerId}`))
     .then(res => res.json())
     .then(data => {
+      console.log("Loaded spaces:", data);
+      console.log("Number of spaces:", data.length);
+      
       const list = document.getElementById('spacesList');
       
       if (data.length === 0) {
@@ -692,12 +695,19 @@ function loadMySpaces() {
         return;
       }
       
-      list.innerHTML = data.map(space => `
+      // Remove duplicates based on _id
+      const uniqueSpaces = data.filter((space, index, self) =>
+        index === self.findIndex((s) => s._id === space._id)
+      );
+      
+      console.log("Unique spaces:", uniqueSpaces.length);
+      
+      list.innerHTML = uniqueSpaces.map(space => `
         <div class="card">
           <h4>₹${space.price}/hour</h4>
           <p>${space.notes || 'No description'}</p>
           <div class="image-preview">
-            ${space.images.map(img => `<img src="${getApiUrl(img)}" alt="Space">`).join('')}
+            ${space.images && space.images.length > 0 ? space.images.map(img => `<img src="${getApiUrl(img)}" alt="Space">`).join('') : '<p>No images</p>'}
           </div>
           <button class="btn-edit" onclick="editSpace('${space._id}')">✏️ Edit</button>
           <button class="btn-delete" onclick="deleteSpace('${space._id}')">🗑️ Delete</button>
