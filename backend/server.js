@@ -157,7 +157,7 @@ setInterval(async () => {
 
 /* ================= TEST ROUTE ================= */
 app.get("/", (req, res) => {
-  res.send("🚗 Parkify Server Running");
+  res.send("🅿️ ASP Server Running - A Space for Park");
 });
 
 /* ================= DATABASE TEST ROUTE ================= */
