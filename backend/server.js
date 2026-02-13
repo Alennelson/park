@@ -74,11 +74,17 @@ app.post("/api/payment/complete/:bookingId", async (req, res) => {
       return res.status(404).json({ success: false, error: "Booking not found" });
     }
 
-    // Calculate payment amount
+    // Calculate payment amount based on actual minutes
     const startTime = new Date(booking.startTime);
     const endTime = new Date();
-    const hours = Math.ceil((endTime - startTime) / (1000 * 60 * 60));
-    const totalAmount = hours * (booking.price || 50);
+    const totalMinutes = Math.ceil((endTime - startTime) / (1000 * 60));
+    const pricePerHour = booking.price || 50;
+    const pricePerMinute = pricePerHour / 60;
+    const totalAmount = Math.round(totalMinutes * pricePerMinute);
+
+    // Calculate commission breakdown
+    const providerShare = Math.round(totalAmount * 0.82); // 82% to provider
+    const commission = totalAmount - providerShare; // 18% company commission
 
     // Update booking status
     await Booking.findByIdAndUpdate(req.params.bookingId, {
@@ -87,6 +93,10 @@ app.post("/api/payment/complete/:bookingId", async (req, res) => {
       endTime: endTime,
       totalAmount: totalAmount
     });
+
+    // Get driver details
+    const User = require("./models/user");
+    const driver = await User.findById(booking.userId);
 
     // Credit wallet (82% to provider)
     if (booking.parkingId && booking.parkingId.ownerId) {
@@ -99,26 +109,32 @@ app.post("/api/payment/complete/:bookingId", async (req, res) => {
         wallet = new Wallet({ ownerId: booking.parkingId.ownerId });
       }
       
-      const providerShare = Math.round(totalAmount * 0.82);
-      
       wallet.balance += providerShare;
       wallet.totalEarnings += providerShare;
       wallet.lastTransaction = new Date();
       await wallet.save();
       
-      // Create transaction record
+      // Create detailed transaction record
       const transaction = new Transaction({
         ownerId: booking.parkingId.ownerId,
         type: 'credit',
         amount: providerShare,
-        description: `Booking payment - ₹${totalAmount} (82% share)`,
+        description: `Parking payment from ${driver ? driver.name : 'Driver'}`,
         bookingId: req.params.bookingId,
+        // Payment breakdown
+        totalPayment: totalAmount,
+        providerShare: providerShare,
+        commission: commission,
+        // Driver details
+        driverId: booking.userId,
+        driverName: driver ? driver.name : 'Unknown',
+        parkingDuration: totalMinutes,
         status: 'completed',
         balanceAfter: wallet.balance
       });
       await transaction.save();
       
-      console.log(`Payment completed: ₹${totalAmount}, Provider gets: ₹${providerShare}`);
+      console.log(`Payment completed: Total ₹${totalAmount}, Provider gets ₹${providerShare}, Commission ₹${commission}`);
     }
 
     res.json({ success: true });

@@ -545,10 +545,10 @@ function startParkingTimer(){
     // Update timer display (HH:MM:SS)
     timer.innerText=String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');
     
-    // Calculate cost based on provider's price
+    // Calculate cost based on actual minutes (not rounded hours)
     const totalMinutes = Math.ceil(diff/60000);
-    const totalHours = Math.ceil(totalMinutes/60);
-    const currentCost = totalHours * pricePerHour;
+    const pricePerMinute = pricePerHour / 60;
+    const currentCost = Math.round(totalMinutes * pricePerMinute);
     
     // Update cost display
     document.getElementById('currentCost').innerText = `₹${currentCost}`;
@@ -559,15 +559,15 @@ function startParkingTimer(){
 function confirmComplete(){
   const diff=Date.now()-startTime;
   const totalMinutes=Math.ceil(diff/60000);
-  const totalHours=Math.ceil(totalMinutes/60);
   
-  // Use provider's actual price
+  // Use provider's actual price and calculate per minute
   const pricePerHour = currentBooking?.parking?.price || currentBooking?.price || 50;
-  const total = totalHours * pricePerHour;
+  const pricePerMinute = pricePerHour / 60;
+  const total = Math.round(totalMinutes * pricePerMinute);
 
-  console.log("Completing payment:", { totalMinutes, totalHours, pricePerHour, total });
+  console.log("Completing payment:", { totalMinutes, pricePerHour, pricePerMinute, total });
 
-  if(!confirm(`Confirm departure?\n\nTime: ${totalMinutes} minutes (${totalHours} hour${totalHours>1?'s':''})\nPrice: ₹${pricePerHour}/hour\nTotal Amount: ₹${total}`)) return;
+  if(!confirm(`Confirm departure?\n\nTime: ${totalMinutes} minutes\nPrice: ₹${pricePerHour}/hour (₹${pricePerMinute.toFixed(2)}/min)\nTotal Amount: ₹${total}`)) return;
 
   completePayment(total, totalMinutes);
 }

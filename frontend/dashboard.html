@@ -960,6 +960,8 @@ function loadPaymentsSection() {
             <div>
               <b>${tx.type === 'credit' ? '💰 Received' : '💸 Withdrawal'}</b>
               <p style="font-size: 12px; color: #666; margin: 5px 0;">${tx.description}</p>
+              ${tx.driverName ? `<p style="font-size: 11px; color: #999;">👤 Driver: ${tx.driverName}</p>` : ''}
+              ${tx.parkingDuration ? `<p style="font-size: 11px; color: #999;">⏱️ Duration: ${tx.parkingDuration} minutes</p>` : ''}
               <small style="color: #999;">${new Date(tx.createdAt).toLocaleString()}</small>
             </div>
             <div style="text-align: right;">
@@ -969,12 +971,21 @@ function loadPaymentsSection() {
               <small style="color: #999;">Balance: ₹${tx.balanceAfter}</small>
             </div>
           </div>
-          ${tx.type === 'credit' && tx.bookingId ? `
+          ${tx.type === 'credit' && tx.totalPayment ? `
             <div style="background: #f5f5f5; padding: 8px; border-radius: 5px; margin-top: 8px; font-size: 12px;">
-              <b>Breakdown:</b><br>
-              Total Payment: ₹${Math.round(tx.amount / 0.82)}<br>
-              Your Share (82%): ₹${tx.amount}<br>
-              Company Commission (18%): ₹${Math.round(tx.amount / 0.82 * 0.18)}
+              <b>💳 Payment Breakdown:</b><br>
+              <div style="display: flex; justify-content: space-between; margin: 3px 0;">
+                <span>Total Payment:</span>
+                <span><b>₹${tx.totalPayment}</b></span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin: 3px 0; color: #4CAF50;">
+                <span>Your Share (82%):</span>
+                <span><b>₹${tx.providerShare}</b></span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin: 3px 0; color: #ff9800;">
+                <span>Company Commission (18%):</span>
+                <span><b>₹${tx.commission}</b></span>
+              </div>
             </div>
           ` : ''}
         </div>
