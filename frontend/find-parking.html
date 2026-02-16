@@ -162,15 +162,161 @@
     .success {
       position: absolute;
       inset: 0;
-      background: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       display: none;
       flex-direction: column;
       justify-content: center;
       align-items: center;
+      overflow: hidden;
     }
 
-    .car { font-size: 60px; }
+    /* Parking Animation */
+    .parking-lot {
+      position: relative;
+      width: 300px;
+      height: 200px;
+      background: #2C3E50;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
 
+    .parking-spaces {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .parking-space {
+      position: relative;
+      width: 70px;
+      height: 100px;
+      border: 3px dashed white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2em;
+    }
+
+    .parking-space.occupied {
+      background: rgba(231, 76, 60, 0.3);
+      border-color: #E74C3C;
+    }
+
+    .parking-space.available {
+      background: rgba(255, 215, 0, 0.3);
+      border-color: #FFD700;
+      animation: spotGlow 1.5s ease-in-out infinite;
+    }
+
+    @keyframes spotGlow {
+      0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+      50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.9); }
+    }
+
+    .parked-car {
+      font-size: 2em;
+      filter: grayscale(0.5);
+    }
+
+    .animated-car {
+      position: absolute;
+      font-size: 2.5em;
+      animation: carReverse 3s ease-in-out forwards;
+      transform-origin: center;
+    }
+
+    @keyframes carReverse {
+      0% {
+        top: -50px;
+        left: 50%;
+        transform: translateX(-50%) rotate(0deg);
+        opacity: 0;
+      }
+      20% {
+        top: 20px;
+        opacity: 1;
+      }
+      40% {
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%) rotate(0deg);
+      }
+      60% {
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%) rotate(-15deg);
+      }
+      80% {
+        top: 95px;
+        left: 50%;
+        transform: translateX(-50%) rotate(-90deg) scale(0.8);
+      }
+      100% {
+        top: 95px;
+        left: 50%;
+        transform: translateX(-50%) rotate(-90deg) scale(0.8);
+      }
+    }
+
+    .success-message {
+      margin-top: 30px;
+      color: white;
+      text-align: center;
+      animation: messageSlideUp 1s ease-out 3s both;
+    }
+
+    .success-message h3 {
+      font-size: 1.8em;
+      margin: 10px 0;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .success-message p {
+      font-size: 1.1em;
+      opacity: 0.9;
+    }
+
+    @keyframes messageSlideUp {
+      0% {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .checkmark {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: #4CAF50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3em;
+      margin: 20px auto;
+      animation: checkmarkPop 0.5s ease-out 3.5s both;
+      box-shadow: 0 5px 20px rgba(76, 175, 80, 0.5);
+    }
+
+    @keyframes checkmarkPop {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.2);
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
     .timer {
       font-size: 32px;
       font-weight: bold;
@@ -212,8 +358,30 @@
   </div>
 
   <div class="success" id="successScreen">
-    <div class="car">🚗</div>
-    <h3>Car parked safely in ASP</h3>
+    <div class="parking-lot">
+      <div class="parking-spaces">
+        <!-- Occupied spot 1 -->
+        <div class="parking-space occupied">
+          <div class="parked-car">🚗</div>
+        </div>
+        
+        <!-- Available spot (yellow) -->
+        <div class="parking-space available" id="targetSpot">
+          <div class="animated-car" id="animatedCar">🚗</div>
+        </div>
+        
+        <!-- Occupied spot 2 -->
+        <div class="parking-space occupied">
+          <div class="parked-car">🚙</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="success-message">
+      <div class="checkmark">✓</div>
+      <h3>Car Parked Successfully!</h3>
+      <p>Welcome to ASP - A Space for Park</p>
+    </div>
   </div>
 
   <div class="panel" id="timerPanel">
