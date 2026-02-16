@@ -119,9 +119,185 @@
       display: block;
       letter-spacing: 1px;
     }
+
+    /* Loading Animation */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      flex-direction: column;
+    }
+
+    .loading-overlay.active {
+      display: flex;
+    }
+
+    .loading-text {
+      color: white;
+      font-size: 1.5em;
+      margin-bottom: 40px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Road Animation */
+    .road-container {
+      position: relative;
+      width: 400px;
+      height: 200px;
+      overflow: hidden;
+    }
+
+    .road {
+      position: absolute;
+      bottom: 60px;
+      width: 100%;
+      height: 4px;
+      background: white;
+    }
+
+    .road-lines {
+      position: absolute;
+      bottom: 62px;
+      width: 200%;
+      height: 2px;
+      display: flex;
+      gap: 30px;
+      animation: roadMove 2s linear infinite;
+    }
+
+    .road-line {
+      width: 40px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    @keyframes roadMove {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Car Animation */
+    .car {
+      position: absolute;
+      bottom: 65px;
+      left: 50px;
+      font-size: 3em;
+      animation: carBounce 0.5s ease-in-out infinite;
+    }
+
+    @keyframes carBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    /* Parking Spots */
+    .parking-spots {
+      position: absolute;
+      bottom: 80px;
+      width: 200%;
+      display: flex;
+      gap: 80px;
+      animation: spotsMove 3s linear infinite;
+    }
+
+    .parking-spot {
+      font-size: 2.5em;
+      opacity: 0.7;
+    }
+
+    @keyframes spotsMove {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+
+    /* Search indicator */
+    .search-indicator {
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+
+    .search-dot {
+      width: 12px;
+      height: 12px;
+      background: white;
+      border-radius: 50%;
+      animation: searchDot 1.5s ease-in-out infinite;
+    }
+
+    .search-dot:nth-child(2) { animation-delay: 0.3s; }
+    .search-dot:nth-child(3) { animation-delay: 0.6s; }
+
+    @keyframes searchDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.5); opacity: 0.5; }
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 500px) {
+      .road-container {
+        width: 300px;
+      }
+    }
   </style>
 </head>
 <body>
+
+<!-- Loading Animation Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-text">🔍 Searching for your parking space...</div>
+  
+  <div class="road-container">
+    <!-- Search indicator dots -->
+    <div class="search-indicator">
+      <div class="search-dot"></div>
+      <div class="search-dot"></div>
+      <div class="search-dot"></div>
+    </div>
+
+    <!-- Parking spots passing by -->
+    <div class="parking-spots">
+      <div class="parking-spot">🅿️</div>
+      <div class="parking-spot">🅿️</div>
+      <div class="parking-spot">🅿️</div>
+      <div class="parking-spot">🅿️</div>
+      <div class="parking-spot">🅿️</div>
+    </div>
+
+    <!-- Car -->
+    <div class="car">🚗</div>
+
+    <!-- Road -->
+    <div class="road"></div>
+    <div class="road-lines">
+      <div class="road-line"></div>
+      <div class="road-line"></div>
+      <div class="road-line"></div>
+      <div class="road-line"></div>
+      <div class="road-line"></div>
+      <div class="road-line"></div>
+      <div class="road-line"></div>
+      <div class="road-line"></div>
+      <div class="road-line"></div>
+      <div class="road-line"></div>
+    </div>
+  </div>
+</div>
 
 <div class="phone">
 
@@ -156,6 +332,14 @@ function login() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
+  if (!email || !password) {
+    alert("Please enter both email and password");
+    return;
+  }
+
+  // Show loading animation
+  document.getElementById("loadingOverlay").classList.add("active");
+
   console.log("Login clicked", { email, password: "***" });
   console.log("Sending request to:", getApiUrl("/api/auth/login"));
 
@@ -172,6 +356,8 @@ function login() {
     console.log("Server response:", data);
 
     if (!data.ownerId) {
+      // Hide loading animation
+      document.getElementById("loadingOverlay").classList.remove("active");
       alert("Login failed: wrong email or password");
       return;
     }
@@ -182,10 +368,16 @@ function login() {
     localStorage.setItem("role", data.role);
 
     console.log("Login successful, redirecting to dashboard");
-    window.location.href = "dashboard.html";
+    
+    // Keep animation for a moment before redirect
+    setTimeout(() => {
+      window.location.href = "dashboard.html";
+    }, 1000);
   })
   .catch(err => {
     console.error("Login error:", err);
+    // Hide loading animation
+    document.getElementById("loadingOverlay").classList.remove("active");
     alert("Server error. Please check console for details.");
   });
 }
@@ -194,6 +386,15 @@ function login() {
 function goRegister() {
   window.location.href = "register.html";
 }
+
+// Allow Enter key to submit
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('password').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      login();
+    }
+  });
+});
 </script>
 
 
