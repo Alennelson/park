@@ -3,69 +3,173 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Choose Your Role - Parkify | Driver or Parking Owner</title>
-  <meta name="description" content="Are you looking for parking or do you have a parking space to rent? Choose your role and get started with Parkify.">
-  <meta name="keywords" content="parking owner, parking driver, rent parking space, find parking">
+  <title>Get Started - ASP | A Space for Park</title>
+  <meta name="description" content="Join ASP - A Space for Park. Login to your account or create a new one to start finding parking or earning money.">
+  <meta name="keywords" content="ASP login, ASP signup, parking account, a space for park">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://www.alen.club/role.html">
 
   <style>
-    body {
+    * {
       margin: 0;
-      background: #FFD400;
-      height: 100vh;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-family: Arial;
+      padding: 20px;
     }
 
-    .box {
-      width: 300px;
-      background: #FFC800;
-      padding: 30px;
-      border-radius: 20px;
-      text-align: center;
-      animation: fade 0.5s ease;
-    }
-
-    @keyframes fade {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    button {
+    .container {
+      max-width: 450px;
       width: 100%;
-      padding: 15px;
+      background: white;
+      padding: 50px 40px;
+      border-radius: 25px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
+      animation: slideUp 0.6s ease;
+    }
+
+    @keyframes slideUp {
+      from { 
+        opacity: 0; 
+        transform: translateY(30px);
+      }
+      to { 
+        opacity: 1; 
+        transform: translateY(0);
+      }
+    }
+
+    .logo {
+      font-size: 4em;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .tagline {
+      font-size: 1em;
+      color: #666;
+      margin-bottom: 40px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 30px 0;
+      color: #999;
+      font-size: 0.9em;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #ddd;
+    }
+
+    .divider::before {
+      margin-right: 15px;
+    }
+
+    .divider::after {
+      margin-left: 15px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 18px;
       margin: 15px 0;
       border: none;
-      border-radius: 12px;
-      background: black;
-      color: white;
-      font-size: 16px;
+      border-radius: 15px;
+      font-size: 1.1em;
+      font-weight: 600;
       cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: block;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #667eea;
+      border: 3px solid #667eea;
+    }
+
+    .btn-secondary:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .back-link {
+      margin-top: 30px;
+      color: #999;
+      text-decoration: none;
+      font-size: 0.95em;
+      display: inline-block;
+      transition: color 0.3s;
+    }
+
+    .back-link:hover {
+      color: #667eea;
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        padding: 40px 30px;
+      }
+
+      h1 {
+        font-size: 2em;
+      }
+
+      .logo {
+        font-size: 3em;
+      }
     }
   </style>
 </head>
 <body>
 
-<div class="box">
-  <h2>Continue as</h2>
-  <button onclick="go('driver')">🚗 Driver</button>
-  <button onclick="go('owner')">🅿️ Parking Owner</button>
+<div class="container">
+  <div class="logo">🅿️</div>
+  <h1>ASP</h1>
+  <p class="tagline">A Space for Park</p>
+
+  <a href="login.html" class="btn btn-primary">Login to Your Account</a>
+  
+  <div class="divider">OR</div>
+  
+  <a href="register.html" class="btn btn-secondary">Create New Account</a>
+
+  <a href="index.html" class="back-link">← Back to Home</a>
 </div>
-
-<script>
-function go(role) {
-  localStorage.setItem("role", role);
-
-  if (role === "owner") {
-    window.location.href = "owner.html";
-  } else {
-    window.location.href = "map.html";
-  }
-}
-</script>
 
 </body>
 </html>
