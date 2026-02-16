@@ -127,12 +127,13 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 50%, #90EE90 100%);
       display: none;
       justify-content: center;
       align-items: center;
       z-index: 9999;
       flex-direction: column;
+      overflow: hidden;
     }
 
     .loading-overlay.active {
@@ -140,118 +141,309 @@
     }
 
     .loading-text {
-      color: white;
+      position: absolute;
+      top: 50px;
+      color: #333;
       font-size: 1.5em;
-      margin-bottom: 40px;
+      font-weight: bold;
       animation: pulse 1.5s ease-in-out infinite;
+      z-index: 100;
     }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      50% { opacity: 0.6; }
     }
 
-    /* Road Animation */
-    .road-container {
+    /* Scene Container */
+    .scene-container {
       position: relative;
-      width: 400px;
-      height: 200px;
+      width: 100%;
+      max-width: 800px;
+      height: 400px;
       overflow: hidden;
     }
 
-    .road {
+    /* Sky and Clouds */
+    .sky {
       position: absolute;
-      bottom: 60px;
+      top: 0;
       width: 100%;
-      height: 4px;
-      background: white;
+      height: 200px;
     }
 
-    .road-lines {
+    .cloud {
       position: absolute;
-      bottom: 62px;
-      width: 200%;
-      height: 2px;
+      font-size: 2em;
+      animation: cloudMove 20s linear infinite;
+    }
+
+    .cloud1 { top: 20px; animation-duration: 25s; }
+    .cloud2 { top: 60px; animation-duration: 30s; }
+    .cloud3 { top: 40px; animation-duration: 35s; }
+
+    @keyframes cloudMove {
+      0% { transform: translateX(-100px); }
+      100% { transform: translateX(100vw); }
+    }
+
+    /* Mountains */
+    .mountains {
+      position: absolute;
+      bottom: 150px;
+      width: 100%;
+      height: 150px;
       display: flex;
-      gap: 30px;
-      animation: roadMove 2s linear infinite;
+      gap: 50px;
     }
 
-    .road-line {
-      width: 40px;
-      height: 2px;
-      background: rgba(255, 255, 255, 0.5);
+    .mountain {
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-left: 100px solid transparent;
+      border-right: 100px solid transparent;
+      border-bottom: 150px solid #8B7355;
+      filter: brightness(0.8);
     }
 
-    @keyframes roadMove {
+    .mountain1 {
+      left: 10%;
+      border-bottom-color: #6B5345;
+    }
+
+    .mountain2 {
+      left: 35%;
+      border-left-width: 120px;
+      border-right-width: 120px;
+      border-bottom-width: 180px;
+      border-bottom-color: #7B6355;
+    }
+
+    .mountain3 {
+      left: 65%;
+      border-left-width: 90px;
+      border-right-width: 90px;
+      border-bottom-width: 140px;
+      border-bottom-color: #8B7365;
+    }
+
+    /* Buildings */
+    .buildings-container {
+      position: absolute;
+      bottom: 100px;
+      width: 200%;
+      height: 150px;
+      display: flex;
+      animation: buildingsMove 8s linear infinite;
+    }
+
+    @keyframes buildingsMove {
       0% { transform: translateX(0); }
       100% { transform: translateX(-50%); }
     }
 
-    /* Car Animation */
-    .car {
+    .building {
       position: absolute;
-      bottom: 65px;
-      left: 50px;
-      font-size: 3em;
-      animation: carBounce 0.5s ease-in-out infinite;
+      width: 80px;
+      background: linear-gradient(to right, #555, #666);
+      border-radius: 5px 5px 0 0;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      gap: 8px;
+      box-shadow: -5px 0 10px rgba(0,0,0,0.3);
+    }
+
+    .window {
+      width: 15px;
+      height: 15px;
+      background: #FFD700;
+      margin: 3px;
+      display: inline-block;
+      box-shadow: 0 0 5px #FFD700;
+    }
+
+    /* Road */
+    .road {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 100px;
+      background: linear-gradient(to bottom, #555 0%, #333 100%);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+
+    .road-marking {
+      width: 60px;
+      height: 8px;
+      background: white;
+      animation: roadMove 1s linear infinite;
+    }
+
+    .road-marking:nth-child(2) { animation-delay: 0.2s; }
+    .road-marking:nth-child(3) { animation-delay: 0.4s; }
+    .road-marking:nth-child(4) { animation-delay: 0.6s; }
+    .road-marking:nth-child(5) { animation-delay: 0.8s; }
+    .road-marking:nth-child(6) { animation-delay: 1s; }
+
+    @keyframes roadMove {
+      0% { transform: translateX(0); opacity: 1; }
+      100% { transform: translateX(-100px); opacity: 0; }
+    }
+
+    /* Car */
+    .car-wrapper {
+      position: absolute;
+      bottom: 105px;
+      left: 30%;
+      z-index: 50;
+    }
+
+    .car-body {
+      position: relative;
+      width: 100px;
+      height: 40px;
+      background: linear-gradient(to bottom, #FF4444 0%, #CC0000 100%);
+      border-radius: 10px 10px 5px 5px;
+      animation: carBounce 0.3s ease-in-out infinite;
     }
 
     @keyframes carBounce {
       0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
+      50% { transform: translateY(-3px); }
     }
 
-    /* Parking Spots */
-    .parking-spots {
+    .car-top {
       position: absolute;
-      bottom: 80px;
+      top: -20px;
+      left: 25px;
+      width: 50px;
+      height: 25px;
+      background: linear-gradient(to bottom, #FF6666 0%, #FF4444 100%);
+      border-radius: 8px 8px 0 0;
+    }
+
+    .car-window {
+      position: absolute;
+      top: -15px;
+      left: 30px;
+      width: 40px;
+      height: 15px;
+      background: rgba(135, 206, 250, 0.6);
+      border-radius: 5px 5px 0 0;
+    }
+
+    .car-wheel {
+      position: absolute;
+      bottom: -8px;
+      width: 18px;
+      height: 18px;
+      background: #222;
+      border-radius: 50%;
+      border: 3px solid #444;
+      animation: wheelRotate 0.5s linear infinite;
+    }
+
+    .wheel-front { right: 15px; }
+    .wheel-back { left: 15px; }
+
+    @keyframes wheelRotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .car-light {
+      position: absolute;
+      top: 15px;
+      right: 5px;
+      width: 8px;
+      height: 6px;
+      background: #FFFF00;
+      border-radius: 2px;
+      box-shadow: 0 0 10px #FFFF00;
+    }
+
+    /* Exhaust Smoke */
+    .exhaust-container {
+      position: absolute;
+      bottom: 5px;
+      left: -10px;
+    }
+
+    .smoke {
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      background: rgba(150, 150, 150, 0.6);
+      border-radius: 50%;
+      animation: smokeRise 1.5s ease-out infinite;
+    }
+
+    .smoke1 { animation-delay: 0s; }
+    .smoke2 { animation-delay: 0.3s; }
+    .smoke3 { animation-delay: 0.6s; }
+    .smoke4 { animation-delay: 0.9s; }
+
+    @keyframes smokeRise {
+      0% {
+        transform: translate(0, 0) scale(0.5);
+        opacity: 0.8;
+      }
+      50% {
+        transform: translate(-20px, -20px) scale(1);
+        opacity: 0.4;
+      }
+      100% {
+        transform: translate(-40px, -40px) scale(1.5);
+        opacity: 0;
+      }
+    }
+
+    /* Trees */
+    .trees-container {
+      position: absolute;
+      bottom: 100px;
       width: 200%;
       display: flex;
-      gap: 80px;
-      animation: spotsMove 3s linear infinite;
+      gap: 150px;
+      animation: treesMove 6s linear infinite;
     }
 
-    .parking-spot {
-      font-size: 2.5em;
-      opacity: 0.7;
+    .tree {
+      font-size: 3em;
+      filter: brightness(0.8);
     }
 
-    @keyframes spotsMove {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-
-    /* Search indicator */
-    .search-indicator {
-      position: absolute;
-      top: 50px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 10px;
-    }
-
-    .search-dot {
-      width: 12px;
-      height: 12px;
-      background: white;
-      border-radius: 50%;
-      animation: searchDot 1.5s ease-in-out infinite;
-    }
-
-    .search-dot:nth-child(2) { animation-delay: 0.3s; }
-    .search-dot:nth-child(3) { animation-delay: 0.6s; }
-
-    @keyframes searchDot {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.5); opacity: 0.5; }
+    @keyframes treesMove {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
     }
 
     /* Mobile responsive */
-    @media (max-width: 500px) {
-      .road-container {
-        width: 300px;
+    @media (max-width: 768px) {
+      .scene-container {
+        height: 300px;
+      }
+
+      .loading-text {
+        font-size: 1.2em;
+        top: 30px;
+      }
+
+      .building {
+        width: 60px;
+      }
+
+      .car-body {
+        width: 80px;
+        height: 35px;
+      }
+
+      .tree {
+        font-size: 2em;
       }
     }
   </style>
@@ -260,41 +452,96 @@
 
 <!-- Loading Animation Overlay -->
 <div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-text">🔍 Searching for your parking space...</div>
+  <div class="loading-text">🔍 Searching for parking...</div>
   
-  <div class="road-container">
-    <!-- Search indicator dots -->
-    <div class="search-indicator">
-      <div class="search-dot"></div>
-      <div class="search-dot"></div>
-      <div class="search-dot"></div>
+  <div class="scene-container">
+    <!-- Sky with clouds -->
+    <div class="sky">
+      <div class="cloud cloud1">☁️</div>
+      <div class="cloud cloud2">☁️</div>
+      <div class="cloud cloud3">☁️</div>
     </div>
 
-    <!-- Parking spots passing by -->
-    <div class="parking-spots">
-      <div class="parking-spot">🅿️</div>
-      <div class="parking-spot">🅿️</div>
-      <div class="parking-spot">🅿️</div>
-      <div class="parking-spot">🅿️</div>
-      <div class="parking-spot">🅿️</div>
+    <!-- Mountains in background -->
+    <div class="mountains">
+      <div class="mountain mountain1"></div>
+      <div class="mountain mountain2"></div>
+      <div class="mountain mountain3"></div>
     </div>
 
-    <!-- Car -->
-    <div class="car">🚗</div>
+    <!-- Buildings -->
+    <div class="buildings-container">
+      <div class="building" style="height: 120px; left: 0%; animation-delay: 0s;">
+        <div class="window"></div>
+        <div class="window"></div>
+        <div class="window"></div>
+      </div>
+      <div class="building" style="height: 90px; left: 15%; animation-delay: 0.5s;">
+        <div class="window"></div>
+        <div class="window"></div>
+      </div>
+      <div class="building" style="height: 140px; left: 28%; animation-delay: 1s;">
+        <div class="window"></div>
+        <div class="window"></div>
+        <div class="window"></div>
+        <div class="window"></div>
+      </div>
+      <div class="building" style="height: 100px; left: 42%; animation-delay: 1.5s;">
+        <div class="window"></div>
+        <div class="window"></div>
+        <div class="window"></div>
+      </div>
+      <div class="building" style="height: 130px; left: 55%; animation-delay: 2s;">
+        <div class="window"></div>
+        <div class="window"></div>
+        <div class="window"></div>
+      </div>
+      <div class="building" style="height: 95px; left: 68%; animation-delay: 2.5s;">
+        <div class="window"></div>
+        <div class="window"></div>
+      </div>
+      <div class="building" style="height: 110px; left: 80%; animation-delay: 3s;">
+        <div class="window"></div>
+        <div class="window"></div>
+        <div class="window"></div>
+      </div>
+    </div>
 
     <!-- Road -->
-    <div class="road"></div>
-    <div class="road-lines">
-      <div class="road-line"></div>
-      <div class="road-line"></div>
-      <div class="road-line"></div>
-      <div class="road-line"></div>
-      <div class="road-line"></div>
-      <div class="road-line"></div>
-      <div class="road-line"></div>
-      <div class="road-line"></div>
-      <div class="road-line"></div>
-      <div class="road-line"></div>
+    <div class="road">
+      <div class="road-marking"></div>
+      <div class="road-marking"></div>
+      <div class="road-marking"></div>
+      <div class="road-marking"></div>
+      <div class="road-marking"></div>
+      <div class="road-marking"></div>
+    </div>
+
+    <!-- Car with exhaust smoke -->
+    <div class="car-wrapper">
+      <div class="car-body">
+        <div class="car-top"></div>
+        <div class="car-window"></div>
+        <div class="car-wheel wheel-front"></div>
+        <div class="car-wheel wheel-back"></div>
+        <div class="car-light"></div>
+      </div>
+      
+      <!-- Exhaust smoke -->
+      <div class="exhaust-container">
+        <div class="smoke smoke1"></div>
+        <div class="smoke smoke2"></div>
+        <div class="smoke smoke3"></div>
+        <div class="smoke smoke4"></div>
+      </div>
+    </div>
+
+    <!-- Trees passing by -->
+    <div class="trees-container">
+      <div class="tree">🌲</div>
+      <div class="tree">🌲</div>
+      <div class="tree">🌲</div>
+      <div class="tree">🌲</div>
     </div>
   </div>
 </div>
