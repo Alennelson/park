@@ -612,16 +612,19 @@ function searchNearbyParking() {
   parkingMarkers.forEach(marker => marker.setMap(null));
   parkingMarkers = [];
 
-  // Search for nearby parking
-  console.log("Searching near:", userLocation);
+  // Get selected vehicle type from localStorage
+  const vehicleType = localStorage.getItem('selectedVehicle') || 'car';
+
+  // Search for nearby parking with vehicle filter
+  console.log("Searching near:", userLocation, "for vehicle:", vehicleType);
   
-  fetch(getApiUrl(`/api/parking/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=5000`))
+  fetch(getApiUrl(`/api/parking/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=5000&vehicleType=${vehicleType}`))
     .then(r => r.json())
     .then(data => {
-      console.log(`Found ${data.length} parking spaces within 5km`);
+      console.log(`Found ${data.length} parking spaces within 5km for ${vehicleType}`);
       
       if (data.length === 0) {
-        alert("No parking spaces found within 5km. Try a different location.");
+        alert(`No parking spaces found within 5km that accommodate ${vehicleType}. Try a different location or vehicle type.`);
         document.getElementById('locationPicker').style.display = 'block';
         return;
       }

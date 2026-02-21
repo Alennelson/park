@@ -5,6 +5,10 @@ const ParkingSchema = new mongoose.Schema({
   price: Number,
   notes: String,
   images: [String],
+  vehicleTypes: {
+    type: [String],
+    default: ["car"] // Default to car if not specified
+  },
   location: {
     type: { type: String, default: "Point" },
     coordinates: [Number], // [longitude, latitude]

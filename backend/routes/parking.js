@@ -17,15 +17,19 @@ const upload = multer({ storage });
 /* ================= REGISTER PARKING ================= */
 router.post("/register", upload.array("images", 3), async (req, res) => {
   try {
-    const { price, notes, ownerId, lat, lng } = req.body;
+    const { price, notes, ownerId, lat, lng, vehicleTypes } = req.body;
 
     const imagePaths = req.files.map(file => "/uploads/" + file.filename);
+
+    // Parse vehicle types from JSON string
+    const parsedVehicleTypes = vehicleTypes ? JSON.parse(vehicleTypes) : ["car"];
 
     const parking = new Parking({
       ownerId,
       price,
       notes,
       images: imagePaths,
+      vehicleTypes: parsedVehicleTypes,
       location: {
         type: "Point",
         coordinates: [lng, lat],
@@ -67,7 +71,7 @@ router.get("/all", async (req, res) => {
 /* ================= SEARCH NEARBY PARKING (5KM RADIUS) ================= */
 router.get("/nearby", async (req, res) => {
   try {
-    const { lat, lng, radius = 5000 } = req.query; // radius in meters (default 5km)
+    const { lat, lng, radius = 5000, vehicleType } = req.query; // radius in meters (default 5km)
 
     if (!lat || !lng) {
       return res.status(400).json({ error: "Latitude and longitude required" });
@@ -76,10 +80,10 @@ router.get("/nearby", async (req, res) => {
     const latitude = parseFloat(lat);
     const longitude = parseFloat(lng);
 
-    console.log(`Searching parking near: ${latitude}, ${longitude} within ${radius}m`);
+    console.log(`Searching parking near: ${latitude}, ${longitude} within ${radius}m for vehicle: ${vehicleType || 'all'}`);
 
-    // MongoDB geospatial query - find parking within radius
-    const spots = await Parking.find({
+    // Build query with vehicle type filter
+    const query = {
       location: {
         $near: {
           $geometry: {
@@ -89,7 +93,15 @@ router.get("/nearby", async (req, res) => {
           $maxDistance: parseInt(radius) // in meters
         }
       }
-    }).limit(50); // Limit to 50 results
+    };
+
+    // Add vehicle type filter if specified
+    if (vehicleType) {
+      query.vehicleTypes = vehicleType;
+    }
+
+    // MongoDB geospatial query - find parking within radius
+    const spots = await Parking.find(query).limit(50); // Limit to 50 results
 
     // Add owner names and calculate distance
     const result = await Promise.all(

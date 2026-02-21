@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Your Vehicle - ASP</title>
+  <script src="config.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #FFD400 0%, #FFC800 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 400px;
+      width: 100%;
+      background: white;
+      padding: 40px 30px;
+      border-radius: 25px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      animation: slideUp 0.6s ease;
+    }
+
+    @keyframes slideUp {
+      from { 
+        opacity: 0; 
+        transform: translateY(30px);
+      }
+      to { 
+        opacity: 1; 
+        transform: translateY(0);
+      }
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 2em;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 0.95em;
+    }
+
+    .vehicle-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .vehicle-card {
+      background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+      border: 3px solid transparent;
+      border-radius: 15px;
+      padding: 25px 15px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .vehicle-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    .vehicle-card.selected {
+      background: linear-gradient(135deg, #FFD400 0%, #FFC800 100%);
+      border-color: #000;
+      box-shadow: 0 10px 30px rgba(255, 212, 0, 0.4);
+    }
+
+    .vehicle-icon {
+      font-size: 3.5em;
+      margin-bottom: 10px;
+    }
+
+    .vehicle-name {
+      font-size: 1em;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .checkmark {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 25px;
+      height: 25px;
+      background: #4CAF50;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.9em;
+    }
+
+    .vehicle-card.selected .checkmark {
+      display: flex;
+    }
+
+    .btn-continue {
+      width: 100%;
+      padding: 18px;
+      background: #000;
+      color: #FFD400;
+      border: none;
+      border-radius: 15px;
+      font-size: 1.2em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-continue:hover {
+      background: #333;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    .btn-continue:disabled {
+      background: #ccc;
+      color: #666;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: #666;
+      text-decoration: none;
+      font-size: 0.95em;
+      transition: color 0.3s;
+    }
+
+    .back-link:hover {
+      color: #333;
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        padding: 30px 20px;
+      }
+
+      h1 {
+        font-size: 1.8em;
+      }
+
+      .vehicle-icon {
+        font-size: 3em;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🚗 Select Your Vehicle</h1>
+  <p class="subtitle">What are you driving today?</p>
+
+  <div class="vehicle-grid">
+    <div class="vehicle-card" onclick="selectVehicle('car')">
+      <div class="checkmark">✓</div>
+      <div class="vehicle-icon">🚗</div>
+      <div class="vehicle-name">Car</div>
+    </div>
+
+    <div class="vehicle-card" onclick="selectVehicle('bike')">
+      <div class="checkmark">✓</div>
+      <div class="vehicle-icon">🏍️</div>
+      <div class="vehicle-name">Bike</div>
+    </div>
+
+    <div class="vehicle-card" onclick="selectVehicle('bus')">
+      <div class="checkmark">✓</div>
+      <div class="vehicle-icon">🚌</div>
+      <div class="vehicle-name">Bus</div>
+    </div>
+
+    <div class="vehicle-card" onclick="selectVehicle('heavy')">
+      <div class="checkmark">✓</div>
+      <div class="vehicle-icon">🚛</div>
+      <div class="vehicle-name">Heavy Vehicle</div>
+    </div>
+  </div>
+
+  <button class="btn-continue" id="continueBtn" onclick="continueToMap()" disabled>
+    Continue to Find Parking
+  </button>
+
+  <a href="dashboard.html" class="back-link">← Back to Dashboard</a>
+</div>
+
+<script>
+let selectedVehicle = null;
+
+function selectVehicle(type) {
+  // Remove previous selection
+  document.querySelectorAll('.vehicle-card').forEach(card => {
+    card.classList.remove('selected');
+  });
+
+  // Add selection to clicked card
+  event.currentTarget.classList.add('selected');
+  selectedVehicle = type;
+
+  // Enable continue button
+  document.getElementById('continueBtn').disabled = false;
+}
+
+function continueToMap() {
+  if (!selectedVehicle) {
+    alert('Please select a vehicle type');
+    return;
+  }
+
+  // Store selected vehicle in localStorage
+  localStorage.setItem('selectedVehicle', selectedVehicle);
+
+  // Redirect to find parking page
+  window.location.href = 'find-parking.html';
+}
+</script>
+
+</body>
+</html>
