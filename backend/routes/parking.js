@@ -53,9 +53,16 @@ router.get("/all", async (req, res) => {
     const result = await Promise.all(
       spots.map(async (spot) => {
         const owner = await User.findById(spot.ownerId);
+        
+        const spotObj = spot.toObject();
+        
+        // Convert Map to plain object for pricing
+        if (spotObj.pricing instanceof Map) {
+          spotObj.pricing = Object.fromEntries(spotObj.pricing);
+        }
 
         return {
-          ...spot.toObject(),
+          ...spotObj,
           ownerName: owner ? owner.name : "Unknown",
         };
       })
@@ -116,8 +123,15 @@ router.get("/nearby", async (req, res) => {
           spot.location.coordinates[0]
         );
 
+        const spotObj = spot.toObject();
+        
+        // Convert Map to plain object for pricing
+        if (spotObj.pricing instanceof Map) {
+          spotObj.pricing = Object.fromEntries(spotObj.pricing);
+        }
+
         return {
-          ...spot.toObject(),
+          ...spotObj,
           ownerName: owner ? owner.name : "Unknown",
           distance: Math.round(distance * 100) / 100 // Round to 2 decimals
         };
@@ -155,7 +169,17 @@ function toRad(degrees) {
 router.get("/owner/:ownerId", async (req, res) => {
   try {
     const spaces = await Parking.find({ ownerId: req.params.ownerId });
-    res.json(spaces);
+    
+    // Convert Map to plain object for pricing
+    const result = spaces.map(space => {
+      const spaceObj = space.toObject();
+      if (spaceObj.pricing instanceof Map) {
+        spaceObj.pricing = Object.fromEntries(spaceObj.pricing);
+      }
+      return spaceObj;
+    });
+    
+    res.json(result);
   } catch (err) {
     console.error("GET OWNER PARKING ERROR:", err);
     res.status(500).json([]);
@@ -167,7 +191,15 @@ router.get("/:id", async (req, res) => {
   try {
     const space = await Parking.findById(req.params.id);
     if (!space) return res.status(404).json({ error: "Space not found" });
-    res.json(space);
+    
+    const spaceObj = space.toObject();
+    
+    // Convert Map to plain object for pricing
+    if (spaceObj.pricing instanceof Map) {
+      spaceObj.pricing = Object.fromEntries(spaceObj.pricing);
+    }
+    
+    res.json(spaceObj);
   } catch (err) {
     console.error("GET SINGLE PARKING ERROR:", err);
     res.status(500).json({ error: "Server error" });

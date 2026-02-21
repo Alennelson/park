@@ -734,17 +734,27 @@ function loadParkingSpots(){
 function showParkingInfo(spot){
   console.log("Showing parking info:", spot);
   console.log("Images:", spot.images);
+  console.log("Pricing object:", spot.pricing);
+  console.log("Pricing type:", typeof spot.pricing);
   
   // Get selected vehicle type
   const selectedVehicle = localStorage.getItem('selectedVehicle') || 'car';
+  console.log("Selected vehicle:", selectedVehicle);
   
   // Get price for selected vehicle type
   let price = 50; // default
-  if (spot.pricing && spot.pricing[selectedVehicle]) {
-    price = spot.pricing[selectedVehicle];
+  if (spot.pricing) {
+    console.log("Pricing keys:", Object.keys(spot.pricing));
+    console.log("Price for", selectedVehicle, ":", spot.pricing[selectedVehicle]);
+    
+    if (spot.pricing[selectedVehicle]) {
+      price = spot.pricing[selectedVehicle];
+    }
   } else if (spot.price) {
     price = spot.price; // fallback to old price field
   }
+  
+  console.log("Final price:", price);
   
   // Get reviews for this parking
   fetch(getApiUrl(`/api/reviews/parking/${spot._id}`))
