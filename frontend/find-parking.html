@@ -162,258 +162,106 @@
     .success {
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, #87CEEB 0%, #B0E0E6 40%, #FFE5B4 100%);
+      background: #f2f2f2;
       display: none;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
       overflow: hidden;
     }
 
-    /* Morning Sun */
-    .morning-sun {
+    /* Straight Parking Animation Styles */
+    .parking-container {
+      position: relative;
+      width: 280px;
+      height: 400px;
+    }
+
+    .parking-slot {
+      width: 70px;
+      height: 120px;
+      border: 4px solid;
       position: absolute;
-      top: 30px;
-      right: 40px;
-      width: 60px;
-      height: 60px;
-      background: radial-gradient(circle, #FFD700 0%, #FFA500 100%);
-      border-radius: 50%;
-      box-shadow: 0 0 40px rgba(255, 215, 0, 0.6);
-      animation: sunRise 2s ease-out;
-    }
-
-    @keyframes sunRise {
-      0% { transform: translateY(50px); opacity: 0; }
-      100% { transform: translateY(0); opacity: 1; }
-    }
-
-    /* Morning Clouds */
-    .morning-cloud {
-      position: absolute;
-      background: rgba(255, 255, 255, 0.7);
-      border-radius: 50px;
-      animation: cloudDrift 20s linear infinite;
-    }
-
-    .cloud1 {
-      width: 80px;
-      height: 30px;
-      top: 50px;
-      left: -100px;
-    }
-
-    .cloud2 {
-      width: 100px;
-      height: 35px;
       top: 80px;
-      left: -150px;
-      animation-delay: 5s;
+      border-radius: 12px;
     }
 
-    @keyframes cloudDrift {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(calc(100vw + 200px)); }
+    .slot-left { 
+      left: 20px; 
+      border-color: red; 
+      background: rgba(255, 0, 0, 0.1);
+    }
+    
+    .slot-middle { 
+      left: 105px; 
+      border-color: green; 
+      background: rgba(0, 255, 0, 0.1);
+    }
+    
+    .slot-right { 
+      right: 20px; 
+      border-color: red; 
+      background: rgba(255, 0, 0, 0.1);
     }
 
-    /* Parking Animation */
-    .parking-lot {
-      position: relative;
-      width: 320px;
-      height: 180px;
-      background: linear-gradient(to bottom, #4A4A4A 0%, #2C2C2C 100%);
-      border-radius: 15px;
-      padding: 20px;
-      box-shadow: 0 15px 40px rgba(0,0,0,0.4);
-      overflow: visible;
-    }
-
-    .parking-spaces {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      margin-top: 20px;
-      position: relative;
-    }
-
-    .parking-space {
-      position: relative;
-      width: 80px;
+    .parked-car-straight {
+      width: 60px;
       height: 110px;
-      border: 4px dashed white;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.5em;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .parking-space.occupied {
-      background: linear-gradient(135deg, rgba(231, 76, 60, 0.4) 0%, rgba(192, 57, 43, 0.3) 100%);
-      border-color: #E74C3C;
-      box-shadow: inset 0 0 20px rgba(231, 76, 60, 0.3);
-    }
-
-    .parking-space.available {
-      background: linear-gradient(135deg, rgba(255, 215, 0, 0.5) 0%, rgba(255, 193, 7, 0.4) 100%);
-      border-color: #FFD700;
-      animation: spotPulse 2s ease-in-out infinite;
-      box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), inset 0 0 20px rgba(255, 215, 0, 0.2);
-    }
-
-    @keyframes spotPulse {
-      0%, 100% { 
-        box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), inset 0 0 20px rgba(255, 215, 0, 0.2);
-      }
-      50% { 
-        box-shadow: 0 0 35px rgba(255, 215, 0, 0.8), inset 0 0 30px rgba(255, 215, 0, 0.4);
-      }
-    }
-
-    .parking-line {
       position: absolute;
-      bottom: 5px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 60%;
-      height: 3px;
-      background: white;
-      opacity: 0.6;
-    }
-
-    .parked-car {
-      font-size: 2.2em;
-      filter: grayscale(0.3) brightness(0.9);
-      transform: rotate(-90deg);
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    }
-
-    .animated-car {
-      position: absolute;
-      font-size: 2.8em;
-      z-index: 100;
-      filter: drop-shadow(3px 3px 6px rgba(0,0,0,0.4));
-      animation: carReverseFromRight 4s ease-in-out forwards;
-    }
-
-    @keyframes carReverseFromRight {
-      0% {
-        top: 50%;
-        right: -100px;
-        transform: translateY(-50%) rotate(0deg) scaleX(-1);
-        opacity: 0;
-      }
-      15% {
-        opacity: 1;
-      }
-      30% {
-        top: 50%;
-        right: 120px;
-        transform: translateY(-50%) rotate(0deg) scaleX(-1);
-      }
-      50% {
-        top: 50%;
-        right: 120px;
-        transform: translateY(-50%) rotate(-15deg) scaleX(-1);
-      }
-      70% {
-        top: 50%;
-        right: 120px;
-        transform: translateY(-50%) rotate(-90deg) scaleX(-1);
-      }
-      85% {
-        top: 55%;
-        right: 120px;
-        transform: translateY(-50%) rotate(-90deg) scaleX(-1) scale(0.95);
-      }
-      100% {
-        top: 50%;
-        right: 120px;
-        transform: translateY(-50%) rotate(-90deg) scaleX(-1) scale(0.9);
-      }
-    }
-
-    .success-message {
-      margin-top: 40px;
-      color: #2C3E50;
-      text-align: center;
-      animation: messageAppear 1s ease-out 4s both;
-    }
-
-    .success-message h3 {
-      font-size: 2em;
-      margin: 15px 0;
-      text-shadow: 2px 2px 4px rgba(255,255,255,0.5);
-      color: #2C3E50;
-    }
-
-    .success-message p {
-      font-size: 1.2em;
-      color: #34495E;
-      font-weight: 500;
-    }
-
-    @keyframes messageAppear {
-      0% {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      100% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .checkmark {
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 3.5em;
-      margin: 20px auto;
-      animation: checkmarkBounce 0.6s ease-out 4.5s both;
-      box-shadow: 0 8px 25px rgba(76, 175, 80, 0.5);
-      border: 5px solid white;
-    }
-
-    @keyframes checkmarkBounce {
-      0% {
-        transform: scale(0) rotate(-180deg);
-        opacity: 0;
-      }
-      50% {
-        transform: scale(1.3) rotate(10deg);
-      }
-      70% {
-        transform: scale(0.9) rotate(-5deg);
-      }
-      100% {
-        transform: scale(1) rotate(0deg);
-        opacity: 1;
-      }
-    }
       font-size: 3em;
-      margin: 20px auto;
-      animation: checkmarkPop 0.5s ease-out 3.5s both;
-      box-shadow: 0 5px 20px rgba(76, 175, 80, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    @keyframes checkmarkPop {
+    .left-parked { 
+      top: 85px; 
+      left: 25px; 
+    }
+    
+    .right-parked { 
+      top: 85px; 
+      right: 25px; 
+    }
+
+    .moving-car {
+      width: 60px;
+      height: 110px;
+      position: absolute;
+      bottom: -150px;
+      left: 110px;
+      font-size: 3em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .moving-car.park {
+      animation: parkStraight 3s forwards ease-in-out;
+    }
+
+    @keyframes parkStraight {
       0% {
-        transform: scale(0);
-        opacity: 0;
-      }
-      50% {
-        transform: scale(1.2);
+        bottom: -150px;
       }
       100% {
-        transform: scale(1);
-        opacity: 1;
+        bottom: 85px;
       }
+    }
+
+    .park-message {
+      position: absolute;
+      bottom: 30px;
+      width: 100%;
+      text-align: center;
+      font-size: 18px;
+      color: green;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 1s;
+    }
+
+    .park-message.show { 
+      opacity: 1; 
     }
     .timer {
       font-size: 32px;
@@ -649,41 +497,21 @@
   </div>
 
   <div class="success" id="successScreen">
-    <!-- Morning Sun -->
-    <div class="morning-sun"></div>
-    
-    <!-- Morning Clouds -->
-    <div class="morning-cloud cloud1"></div>
-    <div class="morning-cloud cloud2"></div>
-
-    <!-- Parking Lot -->
-    <div class="parking-lot">
-      <div class="parking-spaces">
-        <!-- Occupied spot 1 (Left) -->
-        <div class="parking-space occupied">
-          <div class="parked-car">🚗</div>
-          <div class="parking-line"></div>
-        </div>
-        
-        <!-- Available spot (Middle - Yellow) -->
-        <div class="parking-space available" id="targetSpot">
-          <div class="animated-car" id="animatedCar">🚗</div>
-          <div class="parking-line"></div>
-        </div>
-        
-        <!-- Occupied spot 2 (Right) -->
-        <div class="parking-space occupied">
-          <div class="parked-car">🚙</div>
-          <div class="parking-line"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Success Message -->
-    <div class="success-message">
-      <div class="checkmark">✓</div>
-      <h3>Car Parked Successfully!</h3>
-      <p>Welcome to ASP - A Space for Park</p>
+    <div class="parking-container">
+      <!-- Parking Slots -->
+      <div class="parking-slot slot-left"></div>
+      <div class="parking-slot slot-middle"></div>
+      <div class="parking-slot slot-right"></div>
+      
+      <!-- Parked Cars (Orange) -->
+      <div class="parked-car-straight left-parked">🚗</div>
+      <div class="parked-car-straight right-parked">🚗</div>
+      
+      <!-- Moving Car (Green) -->
+      <div class="moving-car" id="movingCar">🚗</div>
+      
+      <!-- Success Message -->
+      <div class="park-message" id="parkMessage">Car parked safely in ASP</div>
     </div>
   </div>
 
@@ -1072,10 +900,21 @@ function verifyOtp(){
     otpPanel.style.display="none";
     successScreen.style.display="flex";
 
+    // Start parking animation
+    setTimeout(() => {
+      document.getElementById('movingCar').classList.add('park');
+    }, 500);
+
+    // Show success message
+    setTimeout(() => {
+      document.getElementById('parkMessage').classList.add('show');
+    }, 3500);
+
+    // Hide success screen and start timer
     setTimeout(()=>{
       successScreen.style.display="none";
       startParkingTimer();
-    },2000);
+    }, 6000);
   });
 }
 
