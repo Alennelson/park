@@ -735,6 +735,17 @@ function showParkingInfo(spot){
   console.log("Showing parking info:", spot);
   console.log("Images:", spot.images);
   
+  // Get selected vehicle type
+  const selectedVehicle = localStorage.getItem('selectedVehicle') || 'car';
+  
+  // Get price for selected vehicle type
+  let price = 50; // default
+  if (spot.pricing && spot.pricing[selectedVehicle]) {
+    price = spot.pricing[selectedVehicle];
+  } else if (spot.price) {
+    price = spot.price; // fallback to old price field
+  }
+  
   // Get reviews for this parking
   fetch(getApiUrl(`/api/reviews/parking/${spot._id}`))
     .then(r => r.json())
@@ -750,6 +761,28 @@ function showParkingInfo(spot){
       // Display rating
       const ratingStars = spot.averageRating ? '⭐'.repeat(Math.round(spot.averageRating)) : 'No ratings yet';
       const ratingText = spot.averageRating ? `${spot.averageRating} (${spot.totalReviews} reviews)` : '';
+      
+      // Vehicle type icons
+      const vehicleIcons = {
+        car: '🚗',
+        bike: '🏍️',
+        bus: '🚌',
+        heavy: '🚛'
+      };
+      
+      // Display pricing for selected vehicle
+      let pricingDisplay = `<b>💰 ₹${price}/hour</b> (for ${vehicleIcons[selectedVehicle]} ${selectedVehicle})<br>`;
+      
+      // Show all available prices in a table
+      if (spot.pricing && Object.keys(spot.pricing).length > 0) {
+        pricingDisplay += '<div style="font-size:11px;color:#666;margin:5px 0;background:#f5f5f5;padding:8px;border-radius:6px;">All prices: ';
+        const allPrices = [];
+        for (const [vType, vPrice] of Object.entries(spot.pricing)) {
+          const highlight = vType === selectedVehicle ? 'font-weight:bold;color:#000;' : '';
+          allPrices.push(`<span style="${highlight}">${vehicleIcons[vType]} ₹${vPrice}/hr</span>`);
+        }
+        pricingDisplay += allPrices.join(' • ') + '</div>';
+      }
       
       // Display recent reviews
       const reviewsHtml = reviews.length > 0 
@@ -771,7 +804,7 @@ function showParkingInfo(spot){
       infoPanel.innerHTML=`
         <b>👤 ${spot.ownerName}</b>
         <span class="distance-badge">📍 ${spot.distance || '?'} km away</span><br>
-        <b>💰 ₹${spot.price}/hour</b><br>
+        ${pricingDisplay}
         <div class="rating-display">
           <span class="rating-stars">${ratingStars}</span>
           <span class="rating-count">${ratingText}</span>
@@ -781,7 +814,7 @@ function showParkingInfo(spot){
           ${images}
         </div>
         ${reviewsHtml}
-        <button class='book' onclick="preBook('${spot._id}', ${spot.price})">Pre‑Book</button>
+        <button class='book' onclick="preBook('${spot._id}', ${price})">Pre‑Book (₹${price}/hr)</button>
         <button class='cancel' onclick="closeInfo()">Close</button>`;
       infoPanel.style.display="block";
     })
@@ -795,15 +828,34 @@ function showParkingInfo(spot){
           }).join('')
         : '<p style="font-size:12px;color:#666;">No images available</p>';
       
+      const vehicleIcons = {
+        car: '🚗',
+        bike: '🏍️',
+        bus: '🚌',
+        heavy: '🚛'
+      };
+      
+      let pricingDisplay = `<b>💰 ₹${price}/hour</b> (for ${vehicleIcons[selectedVehicle]} ${selectedVehicle})<br>`;
+      
+      if (spot.pricing && Object.keys(spot.pricing).length > 0) {
+        pricingDisplay += '<div style="font-size:11px;color:#666;margin:5px 0;background:#f5f5f5;padding:8px;border-radius:6px;">All prices: ';
+        const allPrices = [];
+        for (const [vType, vPrice] of Object.entries(spot.pricing)) {
+          const highlight = vType === selectedVehicle ? 'font-weight:bold;color:#000;' : '';
+          allPrices.push(`<span style="${highlight}">${vehicleIcons[vType]} ₹${vPrice}/hr</span>`);
+        }
+        pricingDisplay += allPrices.join(' • ') + '</div>';
+      }
+      
       infoPanel.innerHTML=`
         <b>👤 ${spot.ownerName}</b>
         <span class="distance-badge">📍 ${spot.distance || '?'} km away</span><br>
-        <b>💰 ₹${spot.price}/hour</b><br>
+        ${pricingDisplay}
         <p style="font-size:12px;margin:8px 0;color:#666;">${spot.notes || 'No description'}</p>
         <div style="display:flex;gap:6px;justify-content:center;margin:8px 0;flex-wrap:wrap;">
           ${images}
         </div>
-        <button class='book' onclick="preBook('${spot._id}', ${spot.price})">Pre‑Book</button>
+        <button class='book' onclick="preBook('${spot._id}', ${price})">Pre‑Book (₹${price}/hr)</button>
         <button class='cancel' onclick="closeInfo()">Close</button>`;
       infoPanel.style.display="block";
     });

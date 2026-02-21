@@ -17,16 +17,16 @@ const upload = multer({ storage });
 /* ================= REGISTER PARKING ================= */
 router.post("/register", upload.array("images", 3), async (req, res) => {
   try {
-    const { price, notes, ownerId, lat, lng, vehicleTypes } = req.body;
+    const { notes, ownerId, lat, lng, vehicleTypes, pricing } = req.body;
 
     const imagePaths = req.files.map(file => "/uploads/" + file.filename);
 
-    // Parse vehicle types from JSON string
     const parsedVehicleTypes = vehicleTypes ? JSON.parse(vehicleTypes) : ["car"];
+    const parsedPricing = pricing ? JSON.parse(pricing) : {};
 
     const parking = new Parking({
       ownerId,
-      price,
+      pricing: parsedPricing,
       notes,
       images: imagePaths,
       vehicleTypes: parsedVehicleTypes,

@@ -2,18 +2,22 @@ const mongoose = require("mongoose");
 
 const ParkingSchema = new mongoose.Schema({
   ownerId: String,
-  price: Number,
+  price: Number, // Keep for backward compatibility
+  pricing: {
+    type: Map,
+    of: Number,
+    default: {}
+  }, // Pricing per vehicle type: { car: 50, bike: 20, bus: 100, heavy: 150 }
   notes: String,
   images: [String],
   vehicleTypes: {
     type: [String],
-    default: ["car"] // Default to car if not specified
+    default: ["car"]
   },
   location: {
     type: { type: String, default: "Point" },
     coordinates: [Number], // [longitude, latitude]
   },
-  // Rating statistics
   averageRating: {
     type: Number,
     default: 0
@@ -24,7 +28,6 @@ const ParkingSchema = new mongoose.Schema({
   }
 });
 
-// Create geospatial index for location-based queries
 ParkingSchema.index({ location: "2dsphere" });
 
 module.exports = mongoose.model("Parking", ParkingSchema);
