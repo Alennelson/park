@@ -477,6 +477,21 @@
         </div>
       </div>
 
+      <!-- Ratings & Reviews Section -->
+      <div class="card" style="margin-top: 20px;">
+        <h4>⭐ Your Ratings & Reviews</h4>
+        <div id="ratingsOverview" style="margin: 15px 0;">
+          <div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
+            <div style="text-align: center;">
+              <div style="font-size: 3em; font-weight: bold; color: #FFD700;" id="averageRating">0</div>
+              <div style="font-size: 2em; color: #FFD700;">⭐⭐⭐⭐⭐</div>
+              <div style="color: #666; font-size: 14px;" id="totalReviewsText">0 reviews</div>
+            </div>
+          </div>
+        </div>
+        <div id="reviewsList"></div>
+      </div>
+
       <div class="card">
         <h4>Recent Activity</h4>
         <div id="recentActivity"></div>
@@ -659,6 +674,77 @@ function loadDetailedStats() {
       `).join('');
     })
     .catch(err => console.error('Detailed stats error:', err));
+  
+  // Load ratings and reviews
+  loadRatingsStats();
+}
+
+// Load ratings statistics
+function loadRatingsStats() {
+  // Get all parking spaces for this owner
+  fetch(getApiUrl(`/api/parking/owner/${ownerId}`))
+    .then(res => res.json())
+    .then(spaces => {
+      if (spaces.length === 0) {
+        document.getElementById('ratingsOverview').innerHTML = '<p>No parking spaces to show ratings</p>';
+        return;
+      }
+      
+      // Calculate overall statistics
+      let totalRating = 0;
+      let totalReviews = 0;
+      let allReviews = [];
+      
+      // Fetch reviews for each parking space
+      const reviewPromises = spaces.map(space => 
+        fetch(getApiUrl(`/api/reviews/parking/${space._id}`))
+          .then(r => r.json())
+          .then(reviews => {
+            if (space.averageRating) {
+              totalRating += space.averageRating * (space.totalReviews || 0);
+              totalReviews += space.totalReviews || 0;
+            }
+            return reviews.map(r => ({...r, spaceName: space.notes || 'Parking Space'}));
+          })
+      );
+      
+      Promise.all(reviewPromises)
+        .then(reviewArrays => {
+          allReviews = reviewArrays.flat();
+          
+          const overallAverage = totalReviews > 0 ? (totalRating / totalReviews).toFixed(1) : 0;
+          const stars = overallAverage > 0 ? '⭐'.repeat(Math.round(overallAverage)) : '☆☆☆☆☆';
+          
+          document.getElementById('averageRating').innerText = overallAverage;
+          document.getElementById('totalReviewsText').innerText = `${totalReviews} review${totalReviews !== 1 ? 's' : ''}`;
+          
+          // Display recent reviews
+          const reviewsList = document.getElementById('reviewsList');
+          if (allReviews.length === 0) {
+            reviewsList.innerHTML = '<p style="text-align:center;color:#666;">No reviews yet</p>';
+            return;
+          }
+          
+          // Sort by date and show latest 10
+          allReviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          
+          reviewsList.innerHTML = allReviews.slice(0, 10).map(review => `
+            <div style="border-bottom: 1px solid #eee; padding: 12px 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <div>
+                  <b style="color: #333;">${review.userName}</b>
+                  <div style="font-size: 11px; color: #999;">${review.spaceName}</div>
+                </div>
+                <div style="color: #FFD700; font-size: 16px;">${'⭐'.repeat(review.rating)}</div>
+              </div>
+              ${review.comment ? `<p style="font-size: 13px; color: #666; margin: 5px 0;">${review.comment}</p>` : ''}
+              <div style="font-size: 11px; color: #999;">${new Date(review.createdAt).toLocaleDateString()}</div>
+            </div>
+          `).join('');
+        })
+        .catch(err => console.error('Error loading reviews:', err));
+    })
+    .catch(err => console.error('Error loading parking spaces:', err));
 }
 
 // Load my parking spaces
