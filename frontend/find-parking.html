@@ -211,15 +211,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      top: 125px;
     }
 
     .left-parked { 
-      top: 125px; 
       left: 25px; 
     }
     
     .right-parked { 
-      top: 125px; 
       right: 25px; 
     }
 
@@ -244,7 +243,11 @@
         bottom: -150px;
         opacity: 1;
       }
-      80% {
+      70% {
+        bottom: 125px;
+        opacity: 1;
+      }
+      85% {
         bottom: 125px;
         opacity: 1;
       }
@@ -256,14 +259,20 @@
 
     .park-message {
       position: absolute;
-      bottom: 80px;
-      width: 100%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
       text-align: center;
-      font-size: 20px;
+      font-size: 22px;
       color: green;
       font-weight: bold;
       opacity: 0;
       transition: opacity 1s;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
     }
 
     .park-message.show { 
@@ -906,21 +915,21 @@ function verifyOtp(){
     otpPanel.style.display="none";
     successScreen.style.display="flex";
 
-    // Start parking animation
+    // Start parking animation immediately
     setTimeout(() => {
       document.getElementById('movingCar').classList.add('park');
-    }, 500);
+    }, 300);
 
-    // Show success message after car disappears (at 3.5 seconds)
+    // Show success message after car parks and disappears (at 3.5 seconds)
     setTimeout(() => {
       document.getElementById('parkMessage').classList.add('show');
-    }, 4000);
+    }, 3500);
 
-    // Hide success screen and start timer
+    // Hide success screen and show timer only
     setTimeout(()=>{
       successScreen.style.display="none";
       startParkingTimer();
-    }, 6500);
+    }, 6000);
   });
 }
 
