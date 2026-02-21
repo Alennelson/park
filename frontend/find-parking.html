@@ -420,6 +420,199 @@
       font-weight: bold;
       margin-top: 10px;
     }
+
+    /* Rating Popup */
+    .rating-popup {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .rating-popup.active {
+      display: flex;
+    }
+
+    .rating-card {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 320px;
+      text-align: center;
+      animation: popIn 0.3s ease;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .rating-card h3 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .stars {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .star {
+      font-size: 2.5em;
+      cursor: pointer;
+      transition: all 0.2s;
+      filter: grayscale(1);
+    }
+
+    .star.active {
+      filter: grayscale(0);
+      transform: scale(1.2);
+    }
+
+    .star:hover {
+      transform: scale(1.3);
+    }
+
+    .rating-card textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 14px;
+      resize: none;
+      margin: 15px 0;
+      font-family: Arial, sans-serif;
+    }
+
+    .rating-card button {
+      width: 100%;
+      padding: 14px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .rating-card button:hover {
+      background: #45a049;
+    }
+
+    .skip-btn {
+      background: #999 !important;
+      margin-top: 5px !important;
+    }
+
+    .skip-btn:hover {
+      background: #777 !important;
+    }
+
+    /* Image Preview Modal */
+    .image-modal {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+
+    .image-modal.active {
+      display: flex;
+    }
+
+    .image-modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 10px;
+      box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 2em;
+      color: white;
+      cursor: pointer;
+      background: rgba(0,0,0,0.5);
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Rating Display */
+    .rating-display {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin: 8px 0;
+      font-size: 14px;
+    }
+
+    .rating-stars {
+      color: #FFD700;
+      font-size: 16px;
+    }
+
+    .rating-count {
+      color: #666;
+      font-size: 12px;
+    }
+
+    .reviews-section {
+      margin-top: 15px;
+      max-height: 200px;
+      overflow-y: auto;
+      text-align: left;
+    }
+
+    .review-item {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 8px 0;
+      font-size: 12px;
+    }
+
+    .review-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+
+    .review-user {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .review-rating {
+      color: #FFD700;
+    }
+
+    .review-comment {
+      color: #666;
+      line-height: 1.4;
+    }
+
+    .review-date {
+      color: #999;
+      font-size: 10px;
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -502,6 +695,33 @@
     </div>
     <button class="complete" onclick="confirmComplete()">Complete Parking & Pay</button>
     <h3 id="priceText"></h3>
+  </div>
+
+  <!-- Rating Popup -->
+  <div class="rating-popup" id="ratingPopup">
+    <div class="rating-card">
+      <h3>⭐ Rate Your Experience</h3>
+      <p style="font-size: 14px; color: #666;">How was your parking experience?</p>
+      
+      <div class="stars" id="ratingStars">
+        <span class="star" onclick="setRating(1)">⭐</span>
+        <span class="star" onclick="setRating(2)">⭐</span>
+        <span class="star" onclick="setRating(3)">⭐</span>
+        <span class="star" onclick="setRating(4)">⭐</span>
+        <span class="star" onclick="setRating(5)">⭐</span>
+      </div>
+      
+      <textarea id="reviewComment" placeholder="Share your experience (optional)" rows="3"></textarea>
+      
+      <button onclick="submitRating()">Submit Rating</button>
+      <button class="skip-btn" onclick="skipRating()">Skip</button>
+    </div>
+  </div>
+
+  <!-- Image Preview Modal -->
+  <div class="image-modal" id="imageModal" onclick="closeImageModal()">
+    <div class="close-modal">×</div>
+    <img id="modalImage" src="" alt="Preview">
   </div>
 </div>
 
@@ -672,25 +892,78 @@ function showParkingInfo(spot){
   console.log("Showing parking info:", spot);
   console.log("Images:", spot.images);
   
-  const images = spot.images && spot.images.length > 0 
-    ? spot.images.map(img => {
-        const imgUrl = getApiUrl(img);
-        console.log("Image URL:", imgUrl);
-        return `<img src="${imgUrl}" style="width:30%;height:70px;object-fit:cover;border-radius:6px;" onerror="console.error('Failed to load image:', this.src)">`;
-      }).join('')
-    : '<p style="font-size:12px;color:#666;">No images available</p>';
-  
-  infoPanel.innerHTML=`
-    <b>👤 ${spot.ownerName}</b>
-    <span class="distance-badge">📍 ${spot.distance || '?'} km away</span><br>
-    <b>💰 ₹${spot.price}/hour</b><br>
-    <p style="font-size:12px;margin:8px 0;color:#666;">${spot.notes || 'No description'}</p>
-    <div style="display:flex;gap:6px;justify-content:center;margin:8px 0;flex-wrap:wrap;">
-      ${images}
-    </div>
-    <button class='book' onclick="preBook('${spot._id}', ${spot.price})">Pre‑Book</button>
-    <button class='cancel' onclick="closeInfo()">Close</button>`;
-  infoPanel.style.display="block";
+  // Get reviews for this parking
+  fetch(getApiUrl(`/api/reviews/parking/${spot._id}`))
+    .then(r => r.json())
+    .then(reviews => {
+      const images = spot.images && spot.images.length > 0 
+        ? spot.images.map(img => {
+            const imgUrl = getApiUrl(img);
+            console.log("Image URL:", imgUrl);
+            return `<img src="${imgUrl}" style="width:30%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="openImageModal('${imgUrl}')" onerror="console.error('Failed to load image:', this.src)">`;
+          }).join('')
+        : '<p style="font-size:12px;color:#666;">No images available</p>';
+      
+      // Display rating
+      const ratingStars = spot.averageRating ? '⭐'.repeat(Math.round(spot.averageRating)) : 'No ratings yet';
+      const ratingText = spot.averageRating ? `${spot.averageRating} (${spot.totalReviews} reviews)` : '';
+      
+      // Display recent reviews
+      const reviewsHtml = reviews.length > 0 
+        ? `<div class="reviews-section">
+            <h4 style="margin: 10px 0; font-size: 14px;">Recent Reviews:</h4>
+            ${reviews.slice(0, 3).map(review => `
+              <div class="review-item">
+                <div class="review-header">
+                  <span class="review-user">${review.userName}</span>
+                  <span class="review-rating">${'⭐'.repeat(review.rating)}</span>
+                </div>
+                ${review.comment ? `<div class="review-comment">${review.comment}</div>` : ''}
+                <div class="review-date">${new Date(review.createdAt).toLocaleDateString()}</div>
+              </div>
+            `).join('')}
+          </div>`
+        : '';
+      
+      infoPanel.innerHTML=`
+        <b>👤 ${spot.ownerName}</b>
+        <span class="distance-badge">📍 ${spot.distance || '?'} km away</span><br>
+        <b>💰 ₹${spot.price}/hour</b><br>
+        <div class="rating-display">
+          <span class="rating-stars">${ratingStars}</span>
+          <span class="rating-count">${ratingText}</span>
+        </div>
+        <p style="font-size:12px;margin:8px 0;color:#666;">${spot.notes || 'No description'}</p>
+        <div style="display:flex;gap:6px;justify-content:center;margin:8px 0;flex-wrap:wrap;">
+          ${images}
+        </div>
+        ${reviewsHtml}
+        <button class='book' onclick="preBook('${spot._id}', ${spot.price})">Pre‑Book</button>
+        <button class='cancel' onclick="closeInfo()">Close</button>`;
+      infoPanel.style.display="block";
+    })
+    .catch(err => {
+      console.error('Error loading reviews:', err);
+      // Show info without reviews if error
+      const images = spot.images && spot.images.length > 0 
+        ? spot.images.map(img => {
+            const imgUrl = getApiUrl(img);
+            return `<img src="${imgUrl}" style="width:30%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="openImageModal('${imgUrl}')">`;
+          }).join('')
+        : '<p style="font-size:12px;color:#666;">No images available</p>';
+      
+      infoPanel.innerHTML=`
+        <b>👤 ${spot.ownerName}</b>
+        <span class="distance-badge">📍 ${spot.distance || '?'} km away</span><br>
+        <b>💰 ₹${spot.price}/hour</b><br>
+        <p style="font-size:12px;margin:8px 0;color:#666;">${spot.notes || 'No description'}</p>
+        <div style="display:flex;gap:6px;justify-content:center;margin:8px 0;flex-wrap:wrap;">
+          ${images}
+        </div>
+        <button class='book' onclick="preBook('${spot._id}', ${spot.price})">Pre‑Book</button>
+        <button class='cancel' onclick="closeInfo()">Close</button>`;
+      infoPanel.style.display="block";
+    });
 }
 
 function closeInfo() {
@@ -915,9 +1188,11 @@ async function completePayment(total, minutes) {
           clearInterval(timerInterval);
           priceText.innerText = `✅ Payment Success!\nTime: ${minutes} min\nPaid: ₹${total}`;
           
+          // Show rating popup after 2 seconds
           setTimeout(() => {
-            window.location.href = "dashboard.html";
-          }, 3000);
+            timerPanel.style.display = 'none';
+            document.getElementById('ratingPopup').classList.add('active');
+          }, 2000);
         } else {
           console.error("Payment verification failed:", verifyData);
           alert("Payment verification failed: " + (verifyData.error || "Unknown error"));
@@ -947,6 +1222,76 @@ async function completePayment(total, minutes) {
     console.error("Payment error:", err);
     alert("Payment failed: " + err.message);
   }
+}
+
+// Rating System
+let selectedRating = 0;
+
+function setRating(rating) {
+  selectedRating = rating;
+  const stars = document.querySelectorAll('.star');
+  stars.forEach((star, index) => {
+    if (index < rating) {
+      star.classList.add('active');
+    } else {
+      star.classList.remove('active');
+    }
+  });
+}
+
+function submitRating() {
+  if (selectedRating === 0) {
+    alert('Please select a rating');
+    return;
+  }
+
+  const comment = document.getElementById('reviewComment').value;
+  const userId = localStorage.getItem('ownerId');
+  const userName = localStorage.getItem('name');
+
+  fetch(getApiUrl('/api/reviews/submit'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      parkingId: currentBooking.parkingId || currentBooking.parking._id,
+      userId: userId,
+      userName: userName,
+      rating: selectedRating,
+      comment: comment,
+      bookingId: currentBooking._id
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      alert('Thank you for your rating!');
+      document.getElementById('ratingPopup').classList.remove('active');
+      window.location.href = 'dashboard.html';
+    } else {
+      alert(data.error || 'Failed to submit rating');
+    }
+  })
+  .catch(err => {
+    console.error('Rating error:', err);
+    alert('Failed to submit rating');
+  });
+}
+
+function skipRating() {
+  if (confirm('Are you sure you want to skip rating?')) {
+    document.getElementById('ratingPopup').classList.remove('active');
+    window.location.href = 'dashboard.html';
+  }
+}
+
+// Image Preview
+function openImageModal(imageSrc) {
+  document.getElementById('modalImage').src = imageSrc;
+  document.getElementById('imageModal').classList.add('active');
+}
+
+function closeImageModal() {
+  document.getElementById('imageModal').classList.remove('active');
 }
 </script>
 

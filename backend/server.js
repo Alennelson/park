@@ -25,6 +25,7 @@ const ownerRoutes = require("./routes/owner");
 const bookingRoutes = require("./routes/bookingRoutes");
 const paymentRoutes = require("./routes/payment");
 const walletRoutes = require("./routes/wallet");
+const reviewRoutes = require("./routes/reviews");
 
 app.use("/api/booking", require("./routes/bookingRoutes"));
 app.use("/api/parking", parkingRoutes);
@@ -33,6 +34,7 @@ app.use("/api/owner", ownerRoutes);
 app.use("/api/booking", bookingRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/wallet", walletRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 /* ================= FIXED BOOKING DRIVER ROUTE ================= */
 /* This is REQUIRED for:

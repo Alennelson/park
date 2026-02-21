@@ -13,6 +13,15 @@ const ParkingSchema = new mongoose.Schema({
     type: { type: String, default: "Point" },
     coordinates: [Number], // [longitude, latitude]
   },
+  // Rating statistics
+  averageRating: {
+    type: Number,
+    default: 0
+  },
+  totalReviews: {
+    type: Number,
+    default: 0
+  }
 });
 
 // Create geospatial index for location-based queries
