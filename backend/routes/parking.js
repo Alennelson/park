@@ -175,13 +175,33 @@ router.get("/:id", async (req, res) => {
 });
 
 /* ================= UPDATE PARKING ================= */
-router.put("/:id", async (req, res) => {
+router.put("/:id", upload.array("images", 3), async (req, res) => {
   try {
-    const { price, notes } = req.body;
+    const { notes, vehicleTypes, pricing } = req.body;
+    
+    const updateData = {
+      notes
+    };
+    
+    // Parse and update vehicle types if provided
+    if (vehicleTypes) {
+      updateData.vehicleTypes = JSON.parse(vehicleTypes);
+    }
+    
+    // Parse and update pricing if provided
+    if (pricing) {
+      updateData.pricing = JSON.parse(pricing);
+    }
+    
+    // Update images if new ones are provided
+    if (req.files && req.files.length === 3) {
+      const imagePaths = req.files.map(file => "/uploads/" + file.filename);
+      updateData.images = imagePaths;
+    }
     
     const space = await Parking.findByIdAndUpdate(
       req.params.id,
-      { price, notes },
+      updateData,
       { new: true }
     );
     

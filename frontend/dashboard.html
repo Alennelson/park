@@ -438,14 +438,42 @@
       </div>
       <div class="card">
         <input type="hidden" id="editSpaceId">
-        <label><b>Price (₹/hour)</b></label>
-        <input type="number" id="editPrice" placeholder="Price per hour">
         
         <label><b>Description</b></label>
         <textarea id="editNotes" placeholder="Description and notes"></textarea>
         
+        <label><b>Vehicle Types & Pricing (₹/hour)</b></label>
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 10px; margin: 10px 0;">
+          <label style="display: block; margin: 12px 0;">
+            <input type="checkbox" id="editVehicleCar" value="car" style="width: auto; margin-right: 8px;" onchange="toggleEditPriceInput('Car')">
+            🚗 Car
+          </label>
+          <input id="editPriceCar" type="number" placeholder="Price per hour for Car (₹)" style="display: none; margin-left: 25px; width: calc(100% - 25px);">
+          
+          <label style="display: block; margin: 12px 0;">
+            <input type="checkbox" id="editVehicleBike" value="bike" style="width: auto; margin-right: 8px;" onchange="toggleEditPriceInput('Bike')">
+            🏍️ Bike/Motorcycle
+          </label>
+          <input id="editPriceBike" type="number" placeholder="Price per hour for Bike (₹)" style="display: none; margin-left: 25px; width: calc(100% - 25px);">
+          
+          <label style="display: block; margin: 12px 0;">
+            <input type="checkbox" id="editVehicleBus" value="bus" style="width: auto; margin-right: 8px;" onchange="toggleEditPriceInput('Bus')">
+            🚌 Bus
+          </label>
+          <input id="editPriceBus" type="number" placeholder="Price per hour for Bus (₹)" style="display: none; margin-left: 25px; width: calc(100% - 25px);">
+          
+          <label style="display: block; margin: 12px 0;">
+            <input type="checkbox" id="editVehicleHeavy" value="heavy" style="width: auto; margin-right: 8px;" onchange="toggleEditPriceInput('Heavy')">
+            🚛 Heavy Vehicle/Truck
+          </label>
+          <input id="editPriceHeavy" type="number" placeholder="Price per hour for Heavy Vehicle (₹)" style="display: none; margin-left: 25px; width: calc(100% - 25px);">
+        </div>
+        
         <label><b>Current Images</b></label>
         <div id="currentImages" class="image-preview"></div>
+        
+        <label><b>Upload New Images (optional, 3 images)</b></label>
+        <input type="file" id="editImages" accept="image/*" multiple>
         
         <button class="btn-primary" onclick="updateSpace()">💾 Save Changes</button>
         <button class="btn-primary" style="background: #666;" onclick="showSection('mySpacesSection')">❌ Cancel</button>
@@ -769,19 +797,55 @@ function loadMySpaces() {
       
       console.log("Unique spaces:", uniqueSpaces.length);
       
-      list.innerHTML = uniqueSpaces.map(space => `
-        <div class="card">
-          <h4>₹${space.price}/hour</h4>
-          <p>${space.notes || 'No description'}</p>
-          <div class="image-preview">
-            ${space.images && space.images.length > 0 ? space.images.map(img => `<img src="${getApiUrl(img)}" alt="Space">`).join('') : '<p>No images</p>'}
+      const vehicleIcons = {
+        car: '🚗',
+        bike: '🏍️',
+        bus: '🚌',
+        heavy: '🚛'
+      };
+      
+      list.innerHTML = uniqueSpaces.map(space => {
+        // Display pricing per vehicle type
+        let pricingDisplay = '';
+        if (space.pricing && Object.keys(space.pricing).length > 0) {
+          pricingDisplay = '<div style="margin: 10px 0; font-size: 14px;">';
+          for (const [vType, vPrice] of Object.entries(space.pricing)) {
+            pricingDisplay += `<div>${vehicleIcons[vType] || vType} <b>₹${vPrice}/hour</b></div>`;
+          }
+          pricingDisplay += '</div>';
+        } else if (space.price) {
+          pricingDisplay = `<h4>₹${space.price}/hour</h4>`;
+        } else {
+          pricingDisplay = '<h4>No pricing set</h4>';
+        }
+        
+        return `
+          <div class="card">
+            ${pricingDisplay}
+            <p>${space.notes || 'No description'}</p>
+            <div class="image-preview">
+              ${space.images && space.images.length > 0 ? space.images.map(img => `<img src="${getApiUrl(img)}" alt="Space">`).join('') : '<p>No images</p>'}
+            </div>
+            <button class="btn-edit" onclick="editSpace('${space._id}')">✏️ Edit</button>
+            <button class="btn-delete" onclick="deleteSpace('${space._id}')">🗑️ Delete</button>
           </div>
-          <button class="btn-edit" onclick="editSpace('${space._id}')">✏️ Edit</button>
-          <button class="btn-delete" onclick="deleteSpace('${space._id}')">🗑️ Delete</button>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     })
     .catch(err => console.error('Load spaces error:', err));
+}
+
+// Toggle price input for edit
+function toggleEditPriceInput(vehicleType) {
+  const checkbox = document.getElementById(`editVehicle${vehicleType}`);
+  const priceInput = document.getElementById(`editPrice${vehicleType}`);
+  
+  if (checkbox.checked) {
+    priceInput.style.display = 'block';
+  } else {
+    priceInput.style.display = 'none';
+    priceInput.value = '';
+  }
 }
 
 // Edit space
@@ -790,8 +854,40 @@ function editSpace(spaceId) {
     .then(res => res.json())
     .then(space => {
       document.getElementById('editSpaceId').value = space._id;
-      document.getElementById('editPrice').value = space.price;
       document.getElementById('editNotes').value = space.notes;
+      
+      // Load pricing per vehicle type
+      if (space.pricing && Object.keys(space.pricing).length > 0) {
+        // New pricing format
+        for (const [vType, vPrice] of Object.entries(space.pricing)) {
+          const vTypeCapitalized = vType.charAt(0).toUpperCase() + vType.slice(1);
+          const checkbox = document.getElementById(`editVehicle${vTypeCapitalized}`);
+          const priceInput = document.getElementById(`editPrice${vTypeCapitalized}`);
+          
+          if (checkbox && priceInput) {
+            checkbox.checked = true;
+            priceInput.style.display = 'block';
+            priceInput.value = vPrice;
+          }
+        }
+      } else if (space.price) {
+        // Old pricing format - default to car
+        document.getElementById('editVehicleCar').checked = true;
+        document.getElementById('editPriceCar').style.display = 'block';
+        document.getElementById('editPriceCar').value = space.price;
+      }
+      
+      // Load vehicle types
+      if (space.vehicleTypes && space.vehicleTypes.length > 0) {
+        space.vehicleTypes.forEach(vType => {
+          const vTypeCapitalized = vType.charAt(0).toUpperCase() + vType.slice(1);
+          const checkbox = document.getElementById(`editVehicle${vTypeCapitalized}`);
+          if (checkbox && !checkbox.checked) {
+            checkbox.checked = true;
+            toggleEditPriceInput(vTypeCapitalized);
+          }
+        });
+      }
       
       const imagesDiv = document.getElementById('currentImages');
       imagesDiv.innerHTML = space.images.map(img => 
@@ -805,21 +901,88 @@ function editSpace(spaceId) {
 // Update space
 function updateSpace() {
   const spaceId = document.getElementById('editSpaceId').value;
-  const price = document.getElementById('editPrice').value;
   const notes = document.getElementById('editNotes').value;
+  const files = document.getElementById('editImages').files;
+  
+  // Get selected vehicle types with prices
+  const vehicleTypes = [];
+  const pricing = {};
+  
+  if (document.getElementById('editVehicleCar').checked) {
+    const price = document.getElementById('editPriceCar').value;
+    if (!price) {
+      alert("Please enter price for Car");
+      return;
+    }
+    vehicleTypes.push("car");
+    pricing.car = parseFloat(price);
+  }
+  
+  if (document.getElementById('editVehicleBike').checked) {
+    const price = document.getElementById('editPriceBike').value;
+    if (!price) {
+      alert("Please enter price for Bike");
+      return;
+    }
+    vehicleTypes.push("bike");
+    pricing.bike = parseFloat(price);
+  }
+  
+  if (document.getElementById('editVehicleBus').checked) {
+    const price = document.getElementById('editPriceBus').value;
+    if (!price) {
+      alert("Please enter price for Bus");
+      return;
+    }
+    vehicleTypes.push("bus");
+    pricing.bus = parseFloat(price);
+  }
+  
+  if (document.getElementById('editVehicleHeavy').checked) {
+    const price = document.getElementById('editPriceHeavy').value;
+    if (!price) {
+      alert("Please enter price for Heavy Vehicle");
+      return;
+    }
+    vehicleTypes.push("heavy");
+    pricing.heavy = parseFloat(price);
+  }
+  
+  if (vehicleTypes.length === 0) {
+    alert("Please select at least one vehicle type");
+    return;
+  }
+  
+  // If images are provided, validate count
+  if (files.length > 0 && files.length !== 3) {
+    alert("Please upload exactly 3 images or leave empty to keep current images");
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('notes', notes);
+  formData.append('vehicleTypes', JSON.stringify(vehicleTypes));
+  formData.append('pricing', JSON.stringify(pricing));
+  
+  // Add new images if provided
+  if (files.length === 3) {
+    for (let i = 0; i < files.length; i++) {
+      formData.append('images', files[i]);
+    }
+  }
   
   fetch(getApiUrl(`/api/parking/${spaceId}`), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ price, notes })
+    body: formData
   })
     .then(res => res.json())
     .then(data => {
       if (data.success) {
         alert('Space updated successfully!');
+        loadMySpaces();
         showSection('mySpacesSection');
       } else {
-        alert('Update failed');
+        alert('Update failed: ' + (data.error || 'Unknown error'));
       }
     })
     .catch(err => {
