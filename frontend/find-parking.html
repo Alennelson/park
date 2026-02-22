@@ -646,6 +646,9 @@ function initMap(){
     updateLocationDisplay();
     
     console.log("Selected place:", place.name, pos);
+    
+    // Automatically search for parking near this location
+    searchNearbyParking();
   });
 
   // Try to get user's current location
