@@ -581,14 +581,13 @@ let parkingMarkers = [];
 function initMap(){
   console.log("initMap called");
   
+  // Default center (Kerala, India)
+  const defaultCenter = {lat:9.9312, lng:76.2673};
+  
   try {
-    // Default center (Kerala, India)
-    const defaultCenter = {lat:9.9312, lng:76.2673};
-    
     const mapElement = document.getElementById("map");
     if (!mapElement) {
       console.error("Map element not found!");
-      document.getElementById("mapError").style.display = "block";
       return;
     }
 
@@ -598,61 +597,60 @@ function initMap(){
     });
     
     console.log("Map created successfully", map);
-  } catch (error) {
-    console.error("Error creating map:", error);
-    document.getElementById("mapError").style.display = "block";
-    document.getElementById("mapError").innerHTML = `<p style="color:red;">Map Error: ${error.message}</p>`;
-    return;
-  }
 
-  // Create draggable location marker with emoji
-  searchMarker = new google.maps.Marker({
-    position: defaultCenter,
-    map: map,
-    draggable: true,
-    icon: {
-      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">' +
-        '<text x="24" y="36" font-size="40" text-anchor="middle">📍</text>' +
-        '</svg>'
-      ),
-      scaledSize: new google.maps.Size(48, 48),
-      anchor: new google.maps.Point(24, 48)
-    },
-    title: "Drag me to your location"
-  });
-
-  // Update location display when marker is dragged
-  searchMarker.addListener('dragend', function() {
-    const pos = searchMarker.getPosition();
-    userLocation = {lat: pos.lat(), lng: pos.lng()};
-    updateLocationDisplay();
-  });
-
-  // Set initial location
-  userLocation = defaultCenter;
-  updateLocationDisplay();
-
-  // Try to get user's current location
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const pos = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        map.setCenter(pos);
-        searchMarker.setPosition(pos);
-        userLocation = pos;
-        updateLocationDisplay();
+    // Create draggable location marker with emoji
+    searchMarker = new google.maps.Marker({
+      position: defaultCenter,
+      map: map,
+      draggable: true,
+      icon: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">' +
+          '<text x="24" y="36" font-size="40" text-anchor="middle">📍</text>' +
+          '</svg>'
+        ),
+        scaledSize: new google.maps.Size(48, 48),
+        anchor: new google.maps.Point(24, 48)
       },
-      () => {
-        console.log("Geolocation permission denied");
-      }
-    );
-  }
+      title: "Drag me to your location"
+    });
 
-  watchBookingStatus();
+    // Update location display when marker is dragged
+    searchMarker.addListener('dragend', function() {
+      const pos = searchMarker.getPosition();
+      userLocation = {lat: pos.lat(), lng: pos.lng()};
+      updateLocationDisplay();
+    });
+
+    // Set initial location
+    userLocation = defaultCenter;
+    updateLocationDisplay();
+
+    // Try to get user's current location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const pos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          map.setCenter(pos);
+          searchMarker.setPosition(pos);
+          userLocation = pos;
+          updateLocationDisplay();
+        },
+        () => {
+          console.log("Geolocation permission denied");
+        }
+      );
+    }
+
+    watchBookingStatus();
+    
+  } catch (error) {
+    console.error("Error in initMap:", error);
+    alert("Map failed to load: " + error.message);
+  }
 }
 
 function updateLocationDisplay() {
