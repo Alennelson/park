@@ -484,7 +484,15 @@
   <!-- Location Picker Overlay -->
   <div class="location-picker" id="locationPicker">
     <h3>📍 Set Your Location</h3>
-    <p>Drag the red marker to your desired location</p>
+    
+    <input 
+      id="searchInput" 
+      type="text" 
+      placeholder="🔍 Search for a place (e.g., Kochi, Mumbai Airport)" 
+      style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; margin: 10px 0;"
+    >
+    
+    <p style="margin: 10px 0 5px 0; font-size: 12px; color: #666;">Or drag the 📍 marker to your location</p>
     <p id="selectedLocation">Lat: -, Lng: -</p>
     <button class="use-current-location" onclick="useCurrentLocation()">📍 Use My Current Location</button>
     <button class="search-btn" onclick="searchNearbyParking()">🔍 Search Parking Within 5km</button>
@@ -609,6 +617,36 @@ function initMap(){
   // Set initial location
   userLocation = defaultCenter;
   updateLocationDisplay();
+
+  // Initialize Google Places Autocomplete
+  const searchInput = document.getElementById('searchInput');
+  const autocomplete = new google.maps.places.Autocomplete(searchInput, {
+    fields: ['geometry', 'name', 'formatted_address']
+  });
+
+  // When user selects a place from autocomplete
+  autocomplete.addListener('place_changed', function() {
+    const place = autocomplete.getPlace();
+    
+    if (!place.geometry || !place.geometry.location) {
+      alert("No details available for: '" + place.name + "'");
+      return;
+    }
+
+    // Move map and marker to selected place
+    const pos = {
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng()
+    };
+    
+    map.setCenter(pos);
+    map.setZoom(15);
+    searchMarker.setPosition(pos);
+    userLocation = pos;
+    updateLocationDisplay();
+    
+    console.log("Selected place:", place.name, pos);
+  });
 
   // Try to get user's current location
   if (navigator.geolocation) {
@@ -1211,7 +1249,7 @@ function closeImageModal() {
 }
 </script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&callback=initMap" async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&libraries=places&callback=initMap" async defer></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 </body>
