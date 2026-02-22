@@ -46,7 +46,11 @@
       background: white;
     }
 
-    #map { width: 100%; height: 100%; }
+    #map { 
+      width: 100%; 
+      height: 100%; 
+      background: #e5e3df;
+    }
 
     /* Location Picker Overlay */
     .location-picker {
@@ -54,45 +58,44 @@
       top: 10px;
       left: 10px;
       right: 10px;
-      background: white;
-      padding: 15px;
+      background: rgba(255, 255, 255, 0.98);
+      padding: 12px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       z-index: 1000;
-      border-radius: 15px;
+      border-radius: 12px;
       max-width: 340px;
     }
 
     .location-picker h3 {
-      margin: 0 0 10px 0;
-      font-size: 16px;
+      margin: 0 0 8px 0;
+      font-size: 15px;
+      font-weight: bold;
     }
 
     .location-picker p {
-      margin: 5px 0;
-      font-size: 12px;
+      margin: 4px 0;
+      font-size: 11px;
       color: #666;
     }
 
     .search-box {
       display: flex;
-      gap: 8px;
-      margin: 10px 0;
-      align-items: center;
+      gap: 6px;
+      margin: 8px 0;
+      align-items: stretch;
     }
 
     .search-box input {
       flex: 1;
-      padding: 12px;
+      padding: 10px;
       border: 2px solid #ddd;
       border-radius: 8px;
-      font-size: 14px;
+      font-size: 13px;
       min-width: 0;
     }
 
     .search-box button {
-      width: auto;
-      min-width: 70px;
-      padding: 12px 14px;
+      padding: 10px 12px;
       background: #4CAF50;
       color: white;
       border: none;
@@ -102,34 +105,23 @@
       margin: 0;
       font-size: 13px;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .search-box button:hover {
       background: #45a049;
     }
 
-    .search-btn {
-      width: 100%;
-      padding: 12px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
     .use-current-location {
       width: 100%;
-      padding: 11px;
+      padding: 10px;
       background: #2196F3;
       color: white;
       border: none;
-      border-radius: 10px;
-      font-size: 13px;
+      border-radius: 8px;
+      font-size: 12px;
       cursor: pointer;
-      margin-top: 8px;
+      margin-top: 6px;
       font-weight: bold;
     }
 
@@ -525,19 +517,19 @@
 <div class="phone">
   <!-- Location Picker Overlay -->
   <div class="location-picker" id="locationPicker">
-    <h3>🔍 Search Parking Location</h3>
+    <h3>🔍 Search Location</h3>
     
     <div class="search-box">
       <input 
         id="searchInput" 
         type="text" 
-        placeholder="Enter place (e.g., Kochi, Vallapu)" 
+        placeholder="Kochi, Vallapu, Mumbai..." 
         onkeypress="if(event.key==='Enter') searchPlace()"
       >
-      <button onclick="searchPlace()">🔍 Search</button>
+      <button onclick="searchPlace()">Search</button>
     </div>
     
-    <p style="margin: 8px 0 0 0; font-size: 12px; color: #666;">Or use your current location</p>
+    <p style="margin: 6px 0 0 0;">Or use current location</p>
     <button class="use-current-location" onclick="useCurrentLocationAndSearch()">📍 Use My Location</button>
   </div>
 
@@ -625,13 +617,23 @@ let searchMarker, userLocation = null;
 let parkingMarkers = [];
 
 function initMap(){
+  console.log("Initializing map...");
+  
   // Default center (Kerala, India)
   const defaultCenter = {lat:9.9312, lng:76.2673};
   
-  map=new google.maps.Map(document.getElementById("map"),{
-    center: defaultCenter,
-    zoom: 14
-  });
+  try {
+    map=new google.maps.Map(document.getElementById("map"),{
+      center: defaultCenter,
+      zoom: 14
+    });
+    
+    console.log("Map created successfully");
+  } catch (error) {
+    console.error("Error creating map:", error);
+    alert("Error loading map. Please refresh the page.");
+    return;
+  }
 
   // Create draggable location marker with emoji
   searchMarker = new google.maps.Marker({
