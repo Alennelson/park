@@ -46,7 +46,7 @@
       background: white;
     }
 
-    #map { width: 100%; height: 100%; }
+    #map { width: 100%; height: 100%; background: #e5e3df; }
 
     /* Location Picker Overlay */
     .location-picker {
@@ -491,6 +491,11 @@
   </div>
 
   <div id="map"></div>
+  
+  <div id="mapError" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; z-index:999;">
+    <p style="color:red; font-weight:bold;">Map failed to load</p>
+    <p style="font-size:12px;">Please check internet connection</p>
+  </div>
 
   <div class="panel" id="infoPanel"></div>
 
@@ -576,15 +581,29 @@ let parkingMarkers = [];
 function initMap(){
   console.log("initMap called");
   
-  // Default center (Kerala, India)
-  const defaultCenter = {lat:9.9312, lng:76.2673};
-  
-  map = new google.maps.Map(document.getElementById("map"), {
-    center: defaultCenter,
-    zoom: 14,
-  });
-  
-  console.log("Map created successfully");
+  try {
+    // Default center (Kerala, India)
+    const defaultCenter = {lat:9.9312, lng:76.2673};
+    
+    const mapElement = document.getElementById("map");
+    if (!mapElement) {
+      console.error("Map element not found!");
+      document.getElementById("mapError").style.display = "block";
+      return;
+    }
+
+    map = new google.maps.Map(mapElement, {
+      center: defaultCenter,
+      zoom: 14,
+    });
+    
+    console.log("Map created successfully", map);
+  } catch (error) {
+    console.error("Error creating map:", error);
+    document.getElementById("mapError").style.display = "block";
+    document.getElementById("mapError").innerHTML = `<p style="color:red;">Map Error: ${error.message}</p>`;
+    return;
+  }
 
   // Create draggable location marker with emoji
   searchMarker = new google.maps.Marker({
@@ -1216,6 +1235,19 @@ function closeImageModal() {
 </script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&callback=initMap" async defer></script>
+<script>
+// Check if map loaded after 5 seconds
+setTimeout(function() {
+  if (!map) {
+    console.error("Map did not load after 5 seconds");
+    const errorDiv = document.getElementById("mapError");
+    if (errorDiv) {
+      errorDiv.style.display = "block";
+      errorDiv.innerHTML = "<p style='color:red;'>Map failed to load. Please refresh the page.</p>";
+    }
+  }
+}, 5000);
+</script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 </body>
