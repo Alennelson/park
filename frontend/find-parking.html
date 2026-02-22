@@ -573,14 +573,23 @@ let map, currentBooking=null, startTime, timerInterval;
 let searchMarker, userLocation = null;
 let parkingMarkers = [];
 
-function initMap(){
+// Make initMap globally accessible
+window.initMap = function(){
+  console.log("initMap called - Google Maps API loaded");
+  
   // Default center (Kerala, India)
   const defaultCenter = {lat:9.9312, lng:76.2673};
   
   map=new google.maps.Map(document.getElementById("map"),{
     center: defaultCenter,
-    zoom: 14
+    zoom: 14,
+    mapTypeControl: true,
+    zoomControl: true,
+    streetViewControl: true,
+    fullscreenControl: true
   });
+  
+  console.log("Google Maps loaded successfully");
 
   // Create draggable location marker with emoji
   searchMarker = new google.maps.Marker({
