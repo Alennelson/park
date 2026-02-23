@@ -1,0 +1,685 @@
+﻿closeImageModal()">
+    <div class="close-modal">Ã—</div>
+    <img id="modalImage" src="" alt="Preview">
+  </div>
+</div>
+
+<script>
+let map, currentBooking=null, startTime, timerInterval;
+let searchMarker, userLocation = null;
+let parkingMarkers = [];
+
+function initMap(){
+  console.log("initMap called");
+  
+  // Default center (Kerala, India)
+  const defaultCenter = {lat:9.9312, lng:76.2673};
+  
+  try {
+    const mapElement = document.getElementById("map");
+    if (!mapElement) {
+      console.error("Map element not found!");
+      return;
+    }
+
+    map = new google.maps.Map(mapElement, {
+      center: defaultCenter,
+      zoom: 14,
+    });
+    
+    console.log("Map created successfully", map);
+
+    // Create draggable location marker with emoji
+    searchMarker = new google.maps.Marker({
+      position: defaultCenter,
+      map: map,
+      draggable: true,
+      icon: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">' +
+          '<text x="24" y="36" font-size="40" text-anchor="middle">ðŸ“</text>' +
+          '</svg>'
+        ),
+        scaledSize: new google.maps.Size(48, 48),
+        anchor: new google.maps.Point(24, 48)
+      },
+      title: "Drag me to your location"
+    });
+
+    // Update location display when marker is dragged
+    searchMarker.addListener('dragend', function() {
+      const pos = searchMarker.getPosition();
+      userLocation = {lat: pos.lat(), lng: pos.lng()};
+      updateLocationDisplay();
+    });
+
+    // Set initial location
+    userLocation = defaultCenter;
+    updateLocationDisplay();
+
+    // Try to get user's current location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const pos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          map.setCenter(pos);
+          searchMarker.setPosition(pos);
+          userLocation = pos;
+          updateLocationDisplay();
+        },
+        () => {
+          console.log("Geolocation permission denied");
+        }
+      );
+    }
+
+    watchBookingStatus();
+    
+  } catch (error) {
+    console.error("Error in initMap:", error);
+    alert("Map failed to load: " + error.message);
+  }
+}
+
+function updateLocationDisplay() {
+  if (userLocation) {
+    document.getElementById('selectedLocation').innerText = 
+      `Lat: ${userLocation.lat.toFixed(4)}, Lng: ${userLocation.lng.toFixed(4)}`;
+  }
+}
+
+function useCurrentLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const pos = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        map.setCenter(pos);
+        searchMarker.setPosition(pos);
+        userLocation = pos;
+        updateLocationDisplay();
+        alert("Location updated to your current position!");
+      },
+      () => {
+        alert("Unable to get your location. Please drag the marker manually.");
+      }
+    );
+  } else {
+    alert("Geolocation is not supported by your browser.");
+  }
+}
+
+function searchNearbyParking() {
+  if (!userLocation) {
+    alert("Please set your location first!");
+    return;
+  }
+
+  // Hide location picker
+  document.getElementById('locationPicker').style.display = 'none';
+
+  // Clear existing parking markers
+  parkingMarkers.forEach(marker => marker.setMap(null));
+  parkingMarkers = [];
+
+  // Get selected vehicle type from localStorage
+  const vehicleType = localStorage.getItem('selectedVehicle') || 'car';
+
+  // Search for nearby parking with vehicle filter
+  console.log("Searching near:", userLocation, "for vehicle:", vehicleType);
+  
+  fetch(getApiUrl(`/api/parking/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=5000&vehicleType=${vehicleType}`))
+    .then(r => r.json())
+    .then(data => {
+      console.log(`Found ${data.length} parking spaces within 5km for ${vehicleType}`);
+      
+      if (data.length === 0) {
+        alert(`No parking spaces found within 5km that accommodate ${vehicleType}. Try a different location or vehicle type.`);
+        document.getElementById('locationPicker').style.display = 'block';
+        return;
+      }
+
+      data.forEach(spot => {
+        const pos = {lat: spot.location.coordinates[1], lng: spot.location.coordinates[0]};
+        
+        const marker = new google.maps.Marker({
+          position: pos,
+          map: map,
+          icon: {
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+              '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">' +
+              '<text x="24" y="36" font-size="40" text-anchor="middle">ðŸ…¿ï¸</text>' +
+              '</svg>'
+            ),
+            scaledSize: new google.maps.Size(48, 48),
+            anchor: new google.maps.Point(24, 48)
+          },
+          title: `${spot.ownerName} - â‚¹${spot.price}/hr - ${spot.distance}km away`
+        });
+        
+        marker.addListener("click", () => showParkingInfo(spot));
+        parkingMarkers.push(marker);
+      });
+
+      // Fit map to show all markers
+      const bounds = new google.maps.LatLngBounds();
+      bounds.extend(searchMarker.getPosition());
+      parkingMarkers.forEach(marker => bounds.extend(marker.getPosition()));
+      map.fitBounds(bounds);
+    })
+    .catch(err => {
+      console.error("Search error:", err);
+      alert("Error searching for parking. Please try again.");
+    });
+}
+
+function loadParkingSpots(){
+  // This function is now replaced by searchNearbyParking
+  // Keeping it for compatibility
+}
+
+function showParkingInfo(spot){
+  console.log("Showing parking info:", spot);
+  console.log("Images:", spot.images);
+  console.log("Pricing object:", spot.pricing);
+  console.log("Pricing type:", typeof spot.pricing);
+  
+  // Get selected vehicle type
+  const selectedVehicle = localStorage.getItem('selectedVehicle') || 'car';
+  console.log("Selected vehicle:", selectedVehicle);
+  
+  // Get price for selected vehicle type
+  let price = 50; // default
+  if (spot.pricing) {
+    console.log("Pricing keys:", Object.keys(spot.pricing));
+    console.log("Price for", selectedVehicle, ":", spot.pricing[selectedVehicle]);
+    
+    if (spot.pricing[selectedVehicle]) {
+      price = spot.pricing[selectedVehicle];
+    }
+  } else if (spot.price) {
+    price = spot.price; // fallback to old price field
+  }
+  
+  console.log("Final price:", price);
+  
+  // Get reviews for this parking
+  fetch(getApiUrl(`/api/reviews/parking/${spot._id}`))
+    .then(r => r.json())
+    .then(reviews => {
+      const images = spot.images && spot.images.length > 0 
+        ? spot.images.map(img => {
+            const imgUrl = getApiUrl(img);
+            console.log("Image URL:", imgUrl);
+            return `<img src="${imgUrl}" style="width:30%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="openImageModal('${imgUrl}')" onerror="console.error('Failed to load image:', this.src)">`;
+          }).join('')
+        : '<p style="font-size:12px;color:#666;">No images available</p>';
+      
+      // Display rating
+      const ratingStars = spot.averageRating ? 'â­'.repeat(Math.round(spot.averageRating)) : 'No ratings yet';
+      const ratingText = spot.averageRating ? `${spot.averageRating} (${spot.totalReviews} reviews)` : '';
+      
+      // Vehicle type icons
+      const vehicleIcons = {
+        car: 'ðŸš—',
+        bike: 'ðŸï¸',
+        bus: 'ðŸšŒ',
+        heavy: 'ðŸš›'
+      };
+      
+      // Display pricing for selected vehicle
+      let pricingDisplay = `<b>ðŸ’° â‚¹${price}/hour</b> (for ${vehicleIcons[selectedVehicle]} ${selectedVehicle})<br>`;
+      
+      // Show all available prices in a table
+      if (spot.pricing && Object.keys(spot.pricing).length > 0) {
+        pricingDisplay += '<div style="font-size:11px;color:#666;margin:5px 0;background:#f5f5f5;padding:8px;border-radius:6px;">All prices: ';
+        const allPrices = [];
+        for (const [vType, vPrice] of Object.entries(spot.pricing)) {
+          const highlight = vType === selectedVehicle ? 'font-weight:bold;color:#000;' : '';
+          allPrices.push(`<span style="${highlight}">${vehicleIcons[vType]} â‚¹${vPrice}/hr</span>`);
+        }
+        pricingDisplay += allPrices.join(' â€¢ ') + '</div>';
+      }
+      
+      // Display recent reviews
+      const reviewsHtml = reviews.length > 0 
+        ? `<div class="reviews-section">
+            <h4 style="margin: 10px 0; font-size: 14px;">Recent Reviews:</h4>
+            ${reviews.slice(0, 3).map(review => `
+              <div class="review-item">
+                <div class="review-header">
+                  <span class="review-user">${review.userName}</span>
+                  <span class="review-rating">${'â­'.repeat(review.rating)}</span>
+                </div>
+                ${review.comment ? `<div class="review-comment">${review.comment}</div>` : ''}
+                <div class="review-date">${new Date(review.createdAt).toLocaleDateString()}</div>
+              </div>
+            `).join('')}
+          </div>`
+        : '';
+      
+      infoPanel.innerHTML=`
+        <b>ðŸ‘¤ ${spot.ownerName}</b>
+        <span class="distance-badge">ðŸ“ ${spot.distance || '?'} km away</span><br>
+        ${pricingDisplay}
+        <div class="rating-display">
+          <span class="rating-stars">${ratingStars}</span>
+          <span class="rating-count">${ratingText}</span>
+        </div>
+        <p style="font-size:12px;margin:8px 0;color:#666;">${spot.notes || 'No description'}</p>
+        <div style="display:flex;gap:6px;justify-content:center;margin:8px 0;flex-wrap:wrap;">
+          ${images}
+        </div>
+        ${reviewsHtml}
+        <button class='book' onclick="preBook('${spot._id}', ${price})">Preâ€‘Book (â‚¹${price}/hr)</button>
+        <button class='cancel' onclick="closeInfo()">Close</button>`;
+      infoPanel.style.display="block";
+    })
+    .catch(err => {
+      console.error('Error loading reviews:', err);
+      // Show info without reviews if error
+      const images = spot.images && spot.images.length > 0 
+        ? spot.images.map(img => {
+            const imgUrl = getApiUrl(img);
+            return `<img src="${imgUrl}" style="width:30%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="openImageModal('${imgUrl}')">`;
+          }).join('')
+        : '<p style="font-size:12px;color:#666;">No images available</p>';
+      
+      const vehicleIcons = {
+        car: 'ðŸš—',
+        bike: 'ðŸï¸',
+        bus: 'ðŸšŒ',
+        heavy: 'ðŸš›'
+      };
+      
+      let pricingDisplay = `<b>ðŸ’° â‚¹${price}/hour</b> (for ${vehicleIcons[selectedVehicle]} ${selectedVehicle})<br>`;
+      
+      if (spot.pricing && Object.keys(spot.pricing).length > 0) {
+        pricingDisplay += '<div style="font-size:11px;color:#666;margin:5px 0;background:#f5f5f5;padding:8px;border-radius:6px;">All prices: ';
+        const allPrices = [];
+        for (const [vType, vPrice] of Object.entries(spot.pricing)) {
+          const highlight = vType === selectedVehicle ? 'font-weight:bold;color:#000;' : '';
+          allPrices.push(`<span style="${highlight}">${vehicleIcons[vType]} â‚¹${vPrice}/hr</span>`);
+        }
+        pricingDisplay += allPrices.join(' â€¢ ') + '</div>';
+      }
+      
+      infoPanel.innerHTML=`
+        <b>ðŸ‘¤ ${spot.ownerName}</b>
+        <span class="distance-badge">ðŸ“ ${spot.distance || '?'} km away</span><br>
+        ${pricingDisplay}
+        <p style="font-size:12px;margin:8px 0;color:#666;">${spot.notes || 'No description'}</p>
+        <div style="display:flex;gap:6px;justify-content:center;margin:8px 0;flex-wrap:wrap;">
+          ${images}
+        </div>
+        <button class='book' onclick="preBook('${spot._id}', ${price})">Preâ€‘Book (â‚¹${price}/hr)</button>
+        <button class='cancel' onclick="closeInfo()">Close</button>`;
+      infoPanel.style.display="block";
+    });
+}
+
+function closeInfo() {
+  infoPanel.style.display="none";
+}
+
+function preBook(parkingId, price){
+  const userId=localStorage.getItem("ownerId");
+
+  fetch(getApiUrl("/api/booking/create"),{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({parkingId, userId, price})
+  }).then(()=>{
+    infoPanel.style.display="none";
+    statusPanel.style.display="block";
+  });
+}
+
+function watchBookingStatus(){
+  const userId=localStorage.getItem("ownerId");
+
+  setInterval(async()=>{
+    const res=await fetch(getApiUrl(`/api/booking/driver/${userId}`));
+    const b=await res.json();
+
+    if(!b){ 
+      statusPanel.style.display="none";
+      otpPanel.style.display="none";
+      timerPanel.style.display="none";
+      return; 
+    }
+
+    currentBooking=b;
+
+    if(b.status==="pending"){
+      statusPanel.style.display="block";
+      statusText.innerText="â³ Waiting for owner confirmation...";
+      directionBtn.style.display="none";
+      reachBtn.style.display="none";
+    }
+
+    if(b.status==="confirmed"){
+      statusPanel.style.display="block";
+      statusText.innerText="âœ… Booking confirmed! Get directions to parking.";
+      directionBtn.style.display="block";
+    }
+
+    if(b.status==="active"){
+      statusPanel.style.display="none";
+      otpPanel.style.display="none";
+      if(!timerInterval) startParkingTimer();
+    }
+
+  },3000);
+}
+
+// Cancel booking function
+function cancelBooking(){
+  if(!confirm("Are you sure you want to cancel this booking?")) return;
+  
+  if(!currentBooking) return;
+  
+  fetch(getApiUrl(`/api/booking/cancel/${currentBooking._id}`),{
+    method:"POST"
+  })
+  .then(()=>{
+    alert("Booking cancelled successfully");
+    currentBooking=null;
+    statusPanel.style.display="none";
+    otpPanel.style.display="none";
+    timerPanel.style.display="none";
+    if(timerInterval) clearInterval(timerInterval);
+  })
+  .catch(err=>{
+    console.error("Cancel error:", err);
+    alert("Failed to cancel booking");
+  });
+}
+
+function openDirections(){
+  const coords=currentBooking.parking.location.coordinates;
+  window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[0]}`);
+  directionBtn.style.display="none";
+  reachBtn.style.display="block";
+}
+
+function confirmReached(){
+  if(!confirm("Did you reach correct parking location?")) return;
+  statusPanel.style.display="none";
+  otpPanel.style.display="block";
+}
+
+function verifyOtp(){
+  const otp=otpInput.value;
+
+  fetch(getApiUrl(`/api/booking/verify-otp/${currentBooking._id}`),{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({otp})
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(!d.success) return alert("Wrong OTP");
+
+    otpPanel.style.display="none";
+    successScreen.style.display="flex";
+
+    // Start parking animation immediately
+    setTimeout(() => {
+      document.getElementById('movingCar').classList.add('park');
+    }, 300);
+
+    // Show success message after car parks and disappears (at 3.5 seconds)
+    setTimeout(() => {
+      document.getElementById('parkMessage').classList.add('show');
+    }, 3500);
+
+    // Hide success screen and show timer only
+    setTimeout(()=>{
+      successScreen.style.display="none";
+      startParkingTimer();
+    }, 6000);
+  });
+}
+
+function startParkingTimer(){
+  if(timerInterval) return; // Prevent multiple timers
+  
+  timerPanel.style.display="block";
+  startTime=Date.now();
+  
+  // Get price from current booking's parking space
+  const pricePerHour = currentBooking?.parking?.price || currentBooking?.price || 50;
+  
+  console.log("Starting timer with price per hour:", pricePerHour);
+
+  timerInterval=setInterval(()=>{
+    const diff=Date.now()-startTime;
+    const h=Math.floor(diff/3600000);
+    const m=Math.floor((diff%3600000)/60000);
+    const s=Math.floor((diff%60000)/1000);
+    
+    // Update timer display (HH:MM:SS)
+    timer.innerText=String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');
+    
+    // Calculate cost based on actual minutes (not rounded hours)
+    const totalMinutes = Math.ceil(diff/60000);
+    const pricePerMinute = pricePerHour / 60;
+    const currentCost = Math.round(totalMinutes * pricePerMinute);
+    
+    // Update cost display
+    document.getElementById('currentCost').innerText = `â‚¹${currentCost}`;
+    document.getElementById('elapsedTime').innerText = `${totalMinutes} min`;
+  },1000);
+}
+
+function confirmComplete(){
+  const diff=Date.now()-startTime;
+  const totalMinutes=Math.ceil(diff/60000);
+  
+  // Use provider's actual price and calculate per minute
+  const pricePerHour = currentBooking?.parking?.price || currentBooking?.price || 50;
+  const pricePerMinute = pricePerHour / 60;
+  const total = Math.round(totalMinutes * pricePerMinute);
+
+  console.log("Completing payment:", { totalMinutes, pricePerHour, pricePerMinute, total });
+
+  if(!confirm(`Confirm departure?\n\nTime: ${totalMinutes} minutes\nPrice: â‚¹${pricePerHour}/hour (â‚¹${pricePerMinute.toFixed(2)}/min)\nTotal Amount: â‚¹${total}`)) return;
+
+  completePayment(total, totalMinutes);
+}
+
+async function completePayment(total, minutes) {
+  try {
+    console.log("Starting payment process...", { total, minutes, bookingId: currentBooking._id });
+    
+    // Create Razorpay order
+    const res = await fetch(getApiUrl("/api/payment/create-order"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        bookingId: currentBooking._id, 
+        amount: total 
+      })
+    });
+
+    console.log("Order response status:", res.status);
+    const orderData = await res.json();
+    console.log("Order data received:", orderData);
+    
+    if (!orderData.orderId) {
+      console.error("No orderId in response:", orderData);
+      alert("Failed to create payment order: " + (orderData.error || "Unknown error"));
+      return;
+    }
+
+    console.log("Opening Razorpay with key:", orderData.keyId);
+
+    // Razorpay payment options
+    const options = {
+      key: orderData.keyId,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: "ASP - A Space for Park",
+      description: `Parking Payment - ${minutes} minutes`,
+      order_id: orderData.orderId,
+      handler: async function (response) {
+        console.log("Payment successful, verifying...", response);
+        
+        // Verify payment
+        const verifyRes = await fetch(getApiUrl("/api/payment/verify"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature
+          })
+        });
+
+        const verifyData = await verifyRes.json();
+        console.log("Verification result:", verifyData);
+
+        if (verifyData.success) {
+          console.log("Payment verified, completing booking...");
+          
+          // Complete booking
+          await fetch(getApiUrl(`/api/payment/complete/${currentBooking._id}`), {
+            method: "POST"
+          });
+
+          clearInterval(timerInterval);
+          priceText.innerText = `âœ… Payment Success!\nTime: ${minutes} min\nPaid: â‚¹${total}`;
+          
+          // Show rating popup after 2 seconds
+          setTimeout(() => {
+            timerPanel.style.display = 'none';
+            document.getElementById('ratingPopup').classList.add('active');
+          }, 2000);
+        } else {
+          console.error("Payment verification failed:", verifyData);
+          alert("Payment verification failed: " + (verifyData.error || "Unknown error"));
+        }
+      },
+      prefill: {
+        name: localStorage.getItem("name") || "User",
+        email: localStorage.getItem("email") || "",
+      },
+      theme: {
+        color: "#FFD400"
+      },
+      modal: {
+        ondismiss: function() {
+          console.log("Payment cancelled by user");
+          alert("Payment cancelled");
+        }
+      }
+    };
+
+    console.log("Initializing Razorpay...");
+    const rzp = new Razorpay(options);
+    rzp.open();
+    console.log("Razorpay popup opened");
+
+  } catch (err) {
+    console.error("Payment error:", err);
+    alert("Payment failed: " + err.message);
+  }
+}
+
+// Rating System
+let selectedRating = 0;
+
+function setRating(rating) {
+  selectedRating = rating;
+  const stars = document.querySelectorAll('.star');
+  stars.forEach((star, index) => {
+    if (index < rating) {
+      star.classList.add('active');
+    } else {
+      star.classList.remove('active');
+    }
+  });
+}
+
+function submitRating() {
+  if (selectedRating === 0) {
+    alert('Please select a rating');
+    return;
+  }
+
+  const comment = document.getElementById('reviewComment').value;
+  const userId = localStorage.getItem('ownerId');
+  const userName = localStorage.getItem('name');
+
+  fetch(getApiUrl('/api/reviews/submit'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      parkingId: currentBooking.parkingId || currentBooking.parking._id,
+      userId: userId,
+      userName: userName,
+      rating: selectedRating,
+      comment: comment,
+      bookingId: currentBooking._id
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      alert('Thank you for your rating!');
+      document.getElementById('ratingPopup').classList.remove('active');
+      window.location.href = 'dashboard.html';
+    } else {
+      alert(data.error || 'Failed to submit rating');
+    }
+  })
+  .catch(err => {
+    console.error('Rating error:', err);
+    alert('Failed to submit rating');
+  });
+}
+
+function skipRating() {
+  if (confirm('Are you sure you want to skip rating?')) {
+    document.getElementById('ratingPopup').classList.remove('active');
+    window.location.href = 'dashboard.html';
+  }
+}
+
+// Image Preview
+function openImageModal(imageSrc) {
+  document.getElementById('modalImage').src = imageSrc;
+  document.getElementById('imageModal').classList.add('active');
+}
+
+function closeImageModal() {
+  document.getElementById('imageModal').classList.remove('active');
+}
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&callback=initMap" async defer></script>
+<script>
+// Check if map loaded after 5 seconds
+setTimeout(function() {
+  if (!map) {
+    console.error("Map did not load after 5 seconds");
+    const errorDiv = document.getElementById("mapError");
+    if (errorDiv) {
+      errorDiv.style.display = "block";
+      errorDiv.innerHTML = "<p style='color:red;'>Map failed to load. Please refresh the page.</p>";
+    }
+  }
+}, 5000);
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&callback=initMap" async defer></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+</body>
+</html>
