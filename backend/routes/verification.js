@@ -165,14 +165,20 @@ router.post("/create-order", async (req, res) => {
     const tierConfig = VERIFICATION_TIERS[tier];
     const amount = tierConfig.monthlyFee * 100; // Convert to paise
     
+    // Generate short receipt (max 40 chars for Razorpay)
+    const timestamp = Date.now().toString().slice(-8); // Last 8 digits
+    const shortOwnerId = ownerId.toString().slice(-8); // Last 8 chars of ownerId
+    const receipt = `v_${shortOwnerId}_${timestamp}`; // Format: v_12345678_12345678 (max 21 chars)
+    
     console.log("Tier config:", tierConfig);
     console.log("Amount in paise:", amount);
+    console.log("Receipt:", receipt, "Length:", receipt.length);
     console.log("Calling Razorpay orders.create...");
     
     const order = await razorpay.orders.create({
       amount: amount,
       currency: "INR",
-      receipt: `verify_${ownerId}_${Date.now()}`
+      receipt: receipt
     });
     
     console.log("SUCCESS: Razorpay order created:", order.id);
@@ -193,12 +199,23 @@ router.post("/create-order", async (req, res) => {
     console.error("Full error:", JSON.stringify(err, null, 2));
     console.error("Error stack:", err.stack);
     
+    // Extract Razorpay error details
+    let errorMessage = "Unknown error";
+    let errorCode = null;
+    
+    if (err.error && err.error.description) {
+      errorMessage = err.error.description;
+      errorCode = err.error.code;
+    } else if (err.message) {
+      errorMessage = err.message;
+    }
+    
     res.status(500).json({ 
       success: false,
       error: "Failed to create order", 
-      message: err.message || "Unknown error",
+      message: errorMessage,
       errorName: err.name,
-      errorCode: err.code
+      errorCode: errorCode || err.code
     });
   }
 });
