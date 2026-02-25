@@ -1118,10 +1118,19 @@ function loadInbox() {
       // Sort by date, newest first
       data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
+      const vehicleIcons = {
+        car: '🚗',
+        bike: '🏍️',
+        bus: '🚌',
+        heavy: '🚛'
+      };
+      
       list.innerHTML = data.map(booking => `
         <div class="inbox-card ${booking.status === 'pending' ? 'pending' : ''}">
-          <h4>🚗 ${booking.driverName || 'Unknown Driver'}</h4>
+          <h4>${vehicleIcons[booking.vehicleType] || '🚗'} ${booking.driverName || 'Unknown Driver'}</h4>
+          <p><b>Vehicle:</b> ${booking.vehicleType ? booking.vehicleType.toUpperCase() : 'CAR'}</p>
           <p><b>Status:</b> ${booking.status}</p>
+          <p><b>Price:</b> ₹${booking.price}/hour</p>
           <p><b>Date:</b> ${new Date(booking.createdAt).toLocaleString()}</p>
           ${booking.status === 'pending' ? `
             <button class="btn-confirm" onclick="confirmBooking('${booking._id}')">✅ Confirm</button>
@@ -1210,10 +1219,19 @@ function loadBookingsSection() {
       
       data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
+      const vehicleIcons = {
+        car: '🚗',
+        bike: '🏍️',
+        bus: '🚌',
+        heavy: '🚛'
+      };
+      
       list.innerHTML = data.map(booking => `
         <div class="card">
-          <h4>🚗 ${booking.driverName || 'Unknown Driver'}</h4>
+          <h4>${vehicleIcons[booking.vehicleType] || '🚗'} ${booking.driverName || 'Unknown Driver'}</h4>
+          <p><b>Vehicle:</b> ${booking.vehicleType ? booking.vehicleType.toUpperCase() : 'CAR'}</p>
           <p><b>Status:</b> ${booking.status}</p>
+          <p><b>Price:</b> ₹${booking.price}/hour</p>
           <p><b>Date:</b> ${new Date(booking.createdAt).toLocaleString()}</p>
           ${booking.status === 'pending' ? `
             <button class="btn-edit" onclick="confirmBooking('${booking._id}')">✅ Confirm</button>

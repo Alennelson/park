@@ -9,23 +9,32 @@ const Parking = require("../models/Parking");
 /* 1️⃣ DRIVER PRE-BOOK */
 router.post("/create", async (req, res) => {
   try {
-    const { parkingId, userId, price } = req.body;
+    const { parkingId, userId, price, vehicleType } = req.body;
 
     console.log("=== BOOKING CREATE START ===");
-    console.log("Request:", { parkingId, userId, price });
+    console.log("Request:", { parkingId, userId, price, vehicleType });
 
-    // PESSIMISTIC LOCKING: Check if parking spot already has an active booking
+    if (!vehicleType) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Vehicle type is required",
+        message: "Please select a vehicle type"
+      });
+    }
+
+    // PESSIMISTIC LOCKING: Check if parking spot already has an active booking FOR THIS VEHICLE TYPE
     const existingBooking = await Booking.findOne({
       parkingId: parkingId,
+      vehicleType: vehicleType,
       status: { $in: ["pending", "confirmed", "active"] }
     });
 
     if (existingBooking) {
-      console.log("BOOKING BLOCKED: Parking spot already has active booking:", existingBooking._id);
+      console.log("BOOKING BLOCKED: Parking spot already has active booking for", vehicleType, ":", existingBooking._id);
       return res.status(409).json({ 
         success: false, 
-        error: "Parking spot is already booked",
-        message: "This parking spot is currently unavailable. Please choose another spot."
+        error: "Parking spot is already booked for this vehicle type",
+        message: `This parking spot is currently unavailable for ${vehicleType}. Please choose another spot.`
       });
     }
 
@@ -61,6 +70,7 @@ router.post("/create", async (req, res) => {
     const booking = new Booking({
       parkingId,
       userId,
+      vehicleType,
       price: bookingPrice,
       status: "pending",
       createdAt: new Date()
@@ -68,7 +78,7 @@ router.post("/create", async (req, res) => {
 
     await booking.save();
 
-    console.log("BOOKING CREATED:", booking._id);
+    console.log("BOOKING CREATED:", booking._id, "for vehicle:", vehicleType);
     console.log("=== BOOKING CREATE END ===");
 
     res.json({ success: true, bookingId: booking._id });

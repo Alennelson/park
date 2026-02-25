@@ -888,6 +888,7 @@ function closeInfo() {
 
 function preBook(parkingId, price){
   const userId=localStorage.getItem("ownerId");
+  const vehicleType = localStorage.getItem("selectedVehicle") || "car";
 
   // Disable book button to prevent double clicks
   const bookButtons = document.querySelectorAll('.book');
@@ -896,7 +897,7 @@ function preBook(parkingId, price){
   fetch(getApiUrl("/api/booking/create"),{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({parkingId, userId, price})
+    body:JSON.stringify({parkingId, userId, price, vehicleType})
   })
   .then(res => res.json())
   .then(data => {
