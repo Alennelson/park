@@ -765,7 +765,7 @@ function showParkingInfo(spot){
         ? spot.images.map(img => {
             const imgUrl = getApiUrl(img);
             console.log("Image URL:", imgUrl);
-            return `<img src="${imgUrl}" style="width:30%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="openImageModal('${imgUrl}')" onerror="console.error('Failed to load image:', this.src)">`;
+            return `<img src="${imgUrl}" style="width:30%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="openImageModal('${imgUrl}')" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%2270%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22100%22 height=%2270%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2212%22%3ENo Image%3C/text%3E%3C/svg%3E'; this.style.cursor='default';">`;
           }).join('')
         : '<p style="font-size:12px;color:#666;">No images available</p>';
       
@@ -835,7 +835,7 @@ function showParkingInfo(spot){
       const images = spot.images && spot.images.length > 0 
         ? spot.images.map(img => {
             const imgUrl = getApiUrl(img);
-            return `<img src="${imgUrl}" style="width:30%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="openImageModal('${imgUrl}')">`;
+            return `<img src="${imgUrl}" style="width:30%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="openImageModal('${imgUrl}')" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%2270%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22100%22 height=%2270%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2212%22%3ENo Image%3C/text%3E%3C/svg%3E'; this.style.cursor='default';">`;
           }).join('')
         : '<p style="font-size:12px;color:#666;">No images available</p>';
       
