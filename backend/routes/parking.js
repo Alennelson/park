@@ -3,6 +3,7 @@ const router = express.Router();   // ⭐ THIS LINE FIXES YOUR ERROR
 const multer = require("multer");
 const Parking = require("../models/Parking");
 const User = require("../models/user");
+const Verification = require("../models/Verification");
 
 /* ================= IMAGE UPLOAD SETUP ================= */
 const storage = multer.diskStorage({
@@ -54,16 +55,34 @@ router.get("/all", async (req, res) => {
       spots.map(async (spot) => {
         const owner = await User.findById(spot.ownerId);
         
+        // Get verification status
+        const verification = await Verification.findOne({
+          ownerId: spot.ownerId,
+          status: "active"
+        });
+        
         const spotObj = spot.toObject();
         
         // Convert Map to plain object for pricing
         if (spotObj.pricing instanceof Map) {
           spotObj.pricing = Object.fromEntries(spotObj.pricing);
         }
+        
+        // Apply price boost if verified
+        if (verification && spotObj.pricing) {
+          const boost = verification.priceBoost / 100;
+          for (const [vehicleType, price] of Object.entries(spotObj.pricing)) {
+            spotObj.pricing[vehicleType] = Math.round(price * (1 + boost));
+          }
+        }
 
         return {
           ...spotObj,
           ownerName: owner ? owner.name : "Unknown",
+          verification: verification ? {
+            tier: verification.tier,
+            badge: true
+          } : null
         };
       })
     );
@@ -129,11 +148,29 @@ router.get("/nearby", async (req, res) => {
         if (spotObj.pricing instanceof Map) {
           spotObj.pricing = Object.fromEntries(spotObj.pricing);
         }
+        
+        // Get verification status
+        const verification = await Verification.findOne({
+          ownerId: spot.ownerId,
+          status: "active"
+        });
+        
+        // Apply price boost if verified
+        if (verification && spotObj.pricing) {
+          const boost = verification.priceBoost / 100;
+          for (const [vehicleType, price] of Object.entries(spotObj.pricing)) {
+            spotObj.pricing[vehicleType] = Math.round(price * (1 + boost));
+          }
+        }
 
         return {
           ...spotObj,
           ownerName: owner ? owner.name : "Unknown",
-          distance: Math.round(distance * 100) / 100 // Round to 2 decimals
+          distance: Math.round(distance * 100) / 100, // Round to 2 decimals
+          verification: verification ? {
+            tier: verification.tier,
+            badge: true
+          } : null
         };
       })
     );

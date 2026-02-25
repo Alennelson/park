@@ -416,10 +416,17 @@
         </button>
       </div>
 
+      <!-- VERIFICATION STATUS CARD -->
+      <div id="verificationCard" class="card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; margin-bottom: 20px; display: none;">
+        <h3 style="color: white; margin-bottom: 15px;">🛡️ Insurance Protection</h3>
+        <div id="verificationStatus"></div>
+      </div>
+
       <div class="card">
         <h4>Quick Actions</h4>
         <button class="btn-primary" onclick="window.location.href='register-parking.html'">➕ Register New Space</button>
         <button class="btn-primary" onclick="window.location.href='vehicle-select.html'">🔍 Find Parking</button>
+        <button class="btn-primary" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border: none;" onclick="window.location.href='verification.html'">🛡️ ASP Insurance Protection</button>
       </div>
     </div>
 
@@ -620,7 +627,72 @@ function loadWallet() {
     .catch(err => console.error('Wallet error:', err));
 }
 
+// Load verification status
+function loadVerificationStatus() {
+  fetch(getApiUrl(`/api/verification/status/${ownerId}`))
+    .then(res => res.json())
+    .then(data => {
+      const verificationCard = document.getElementById('verificationCard');
+      const verificationStatus = document.getElementById('verificationStatus');
+      
+      if (data.verified) {
+        const tierBadges = {
+          silver: '🥈 Silver',
+          gold: '🥇 Gold',
+          platinum: '💎 Platinum'
+        };
+        
+        const tierColors = {
+          silver: 'linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 100%)',
+          gold: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+          platinum: 'linear-gradient(135deg, #E5E4E2 0%, #BCC6CC 100%)'
+        };
+        
+        const expiryDate = new Date(data.expiresAt).toLocaleDateString();
+        const daysLeft = Math.ceil((new Date(data.expiresAt) - new Date()) / (1000 * 60 * 60 * 24));
+        
+        verificationCard.style.background = tierColors[data.tier];
+        verificationCard.style.color = data.tier === 'silver' || data.tier === 'platinum' ? '#000' : '#fff';
+        
+        verificationStatus.innerHTML = `
+          <div style="font-size: 28px; font-weight: bold; margin-bottom: 10px;">
+            ${tierBadges[data.tier]} Verified
+          </div>
+          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 15px;">
+            <p><strong>Expires:</strong> ${expiryDate} (${daysLeft} days left)</p>
+            <p><strong>Claim Limit:</strong> ₹${data.claimLimit.toLocaleString()}</p>
+            <p><strong>Price Boost:</strong> +${data.priceBoost}% on all bookings</p>
+          </div>
+          <button class="btn-primary" style="background: rgba(255,255,255,0.3); color: inherit; border: 2px solid currentColor;" onclick="window.location.href='verification.html'">
+            Upgrade Plan
+          </button>
+        `;
+        
+        verificationCard.style.display = 'block';
+      } else {
+        verificationCard.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+        verificationCard.style.color = 'white';
+        
+        verificationStatus.innerHTML = `
+          <div style="font-size: 18px; margin-bottom: 15px;">
+            <p>🔒 Get verified and earn more!</p>
+            <p style="font-size: 14px; opacity: 0.9; margin-top: 10px;">
+              Increase trust, get insurance protection, and boost your parking prices by up to 15%
+            </p>
+          </div>
+          <button class="btn-primary" style="background: white; color: #f5576c;" onclick="window.location.href='verification.html'">
+            Get Verified Now
+          </button>
+        `;
+        
+        verificationCard.style.display = 'block';
+      }
+    })
+    .catch(err => console.error('Verification status error:', err));
+}
+
 // Show section and update menu
+
 function showSection(sectionId) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
@@ -1235,12 +1307,14 @@ function logout() {
 // Load initial data
 loadDashboardStats();
 loadWallet();
+loadVerificationStatus();
 loadInbox();
 
 // Auto-refresh inbox and wallet every 30 seconds
 setInterval(() => {
   loadInbox();
   loadWallet();
+  loadVerificationStatus();
 }, 30000);
 </script>
 

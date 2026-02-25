@@ -812,8 +812,13 @@ function showParkingInfo(spot){
           </div>`
         : '';
       
+      // Verification badge
+      const verificationBadge = spot.verification ? 
+        (spot.verification.tier === 'platinum' ? '�' : 
+         spot.verification.tier === 'gold' ? '🥇' : '🥈') : '';
+      
       infoPanel.innerHTML=`
-        <b>👤 ${spot.ownerName}</b>
+        <b>👤 ${spot.ownerName} ${verificationBadge}</b>
         <span class="distance-badge">📍 ${spot.distance || '?'} km away</span><br>
         ${pricingDisplay}
         <div class="rating-display">
@@ -858,8 +863,13 @@ function showParkingInfo(spot){
         pricingDisplay += allPrices.join(' • ') + '</div>';
       }
       
+      // Verification badge
+      const verificationBadge = spot.verification ? 
+        (spot.verification.tier === 'platinum' ? '💎' : 
+         spot.verification.tier === 'gold' ? '🥇' : '🥈') : '';
+      
       infoPanel.innerHTML=`
-        <b>👤 ${spot.ownerName}</b>
+        <b>👤 ${spot.ownerName} ${verificationBadge}</b>
         <span class="distance-badge">📍 ${spot.distance || '?'} km away</span><br>
         ${pricingDisplay}
         <p style="font-size:12px;margin:8px 0;color:#666;">${spot.notes || 'No description'}</p>
