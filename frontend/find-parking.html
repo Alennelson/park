@@ -573,7 +573,8 @@ let map, currentBooking=null, startTime, timerInterval;
 let searchMarker, userLocation = null;
 let parkingMarkers = [];
 
-function initMap(){
+// Make initMap globally accessible
+window.initMap = function(){
   // Default center (Kerala, India)
   const defaultCenter = {lat:9.9312, lng:76.2673};
   
