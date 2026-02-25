@@ -301,20 +301,28 @@ async function selectPlan(tier) {
     return;
   }
   
+  console.log('Selecting plan:', tier, 'for owner:', ownerId);
+  
   try {
     // Create order
+    console.log('Creating order...');
     const orderRes = await fetch(getApiUrl('/api/verification/create-order'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ownerId, tier })
     });
     
+    console.log('Order response status:', orderRes.status);
     const orderData = await orderRes.json();
+    console.log('Order data:', orderData);
     
     if (!orderData.orderId) {
-      alert('Failed to create order');
+      console.error('No orderId in response:', orderData);
+      alert('Failed to create order: ' + (orderData.error || 'Unknown error'));
       return;
     }
+    
+    console.log('Opening Razorpay with order:', orderData.orderId);
     
     // Open Razorpay
     const options = {
@@ -325,26 +333,39 @@ async function selectPlan(tier) {
       description: `${tier.toUpperCase()} Verification Plan`,
       order_id: orderData.orderId,
       handler: async function (response) {
-        // Verify payment
-        const verifyRes = await fetch(getApiUrl('/api/verification/verify-payment'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature,
-            ownerId,
-            tier
-          })
-        });
+        console.log('Payment successful:', response);
         
-        const verifyData = await verifyRes.json();
-        
-        if (verifyData.success) {
-          alert(`🎉 Congratulations! You are now ${tier.toUpperCase()} verified!`);
-          loadStatus();
-        } else {
-          alert('Payment verification failed');
+        try {
+          // Verify payment
+          console.log('Verifying payment...');
+          const verifyRes = await fetch(getApiUrl('/api/verification/verify-payment'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              ownerId,
+              tier
+            })
+          });
+          
+          console.log('Verify response status:', verifyRes.status);
+          const verifyData = await verifyRes.json();
+          console.log('Verify data:', verifyData);
+          
+          if (verifyData.success) {
+            alert(`🎉 Congratulations! You are now ${tier.toUpperCase()} verified!\n\nYour badge will be visible to all drivers.\nYour prices have been automatically increased by ${tier === 'silver' ? '5' : tier === 'gold' ? '10' : '15'}%`);
+            setTimeout(() => {
+              window.location.href = 'dashboard.html';
+            }, 2000);
+          } else {
+            console.error('Verification failed:', verifyData);
+            alert('Payment verification failed: ' + (verifyData.error || 'Unknown error'));
+          }
+        } catch (verifyErr) {
+          console.error('Verification error:', verifyErr);
+          alert('Payment verification failed: ' + verifyErr.message);
         }
       },
       prefill: {
@@ -353,11 +374,17 @@ async function selectPlan(tier) {
       },
       theme: {
         color: "#FFD400"
+      },
+      modal: {
+        ondismiss: function() {
+          console.log('Payment cancelled by user');
+        }
       }
     };
     
     const rzp = new Razorpay(options);
     rzp.open();
+    console.log('Razorpay opened');
     
   } catch (err) {
     console.error('Payment error:', err);

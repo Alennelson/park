@@ -118,18 +118,25 @@ router.post("/create-order", async (req, res) => {
   try {
     const { ownerId, tier } = req.body;
     
+    console.log("Creating verification order:", { ownerId, tier });
+    
     if (!VERIFICATION_TIERS[tier]) {
+      console.error("Invalid tier:", tier);
       return res.status(400).json({ error: "Invalid tier" });
     }
     
     const tierConfig = VERIFICATION_TIERS[tier];
     const amount = tierConfig.monthlyFee * 100; // Convert to paise
     
+    console.log("Creating Razorpay order for amount:", amount);
+    
     const order = await razorpay.orders.create({
       amount: amount,
       currency: "INR",
       receipt: `verify_${ownerId}_${Date.now()}`
     });
+    
+    console.log("Razorpay order created:", order.id);
     
     res.json({
       orderId: order.id,
@@ -139,7 +146,7 @@ router.post("/create-order", async (req, res) => {
     });
   } catch (err) {
     console.error("Create verification order error:", err);
-    res.status(500).json({ error: "Failed to create order" });
+    res.status(500).json({ error: "Failed to create order", details: err.message });
   }
 });
 
@@ -154,6 +161,8 @@ router.post("/verify-payment", async (req, res) => {
       tier
     } = req.body;
     
+    console.log("Verifying payment:", { razorpay_order_id, razorpay_payment_id, ownerId, tier });
+    
     // Verify signature
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSign = crypto
@@ -162,20 +171,31 @@ router.post("/verify-payment", async (req, res) => {
       .digest("hex");
     
     if (razorpay_signature !== expectedSign) {
+      console.error("Invalid signature");
       return res.status(400).json({ success: false, error: "Invalid signature" });
     }
     
+    console.log("Payment signature verified successfully");
+    
     // Get tier configuration
     const tierConfig = VERIFICATION_TIERS[tier];
+    
+    if (!tierConfig) {
+      console.error("Invalid tier:", tier);
+      return res.status(400).json({ success: false, error: "Invalid tier" });
+    }
     
     // Calculate expiry (30 days from now)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
     
+    console.log("Creating/updating verification for owner:", ownerId);
+    
     // Create or update verification
     let verification = await Verification.findOne({ ownerId });
     
     if (verification) {
+      console.log("Updating existing verification");
       // Update existing
       verification.tier = tier;
       verification.status = "active";
@@ -188,6 +208,7 @@ router.post("/verify-payment", async (req, res) => {
       verification.activatedAt = new Date();
       verification.expiresAt = expiresAt;
     } else {
+      console.log("Creating new verification");
       // Create new
       verification = new Verification({
         ownerId,
@@ -206,6 +227,8 @@ router.post("/verify-payment", async (req, res) => {
     
     await verification.save();
     
+    console.log("Verification saved successfully:", verification._id);
+    
     res.json({ 
       success: true, 
       tier: tier,
@@ -213,7 +236,7 @@ router.post("/verify-payment", async (req, res) => {
     });
   } catch (err) {
     console.error("Verify payment error:", err);
-    res.status(500).json({ success: false, error: "Server error" });
+    res.status(500).json({ success: false, error: "Server error", details: err.message });
   }
 });
 
