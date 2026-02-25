@@ -316,10 +316,16 @@ async function selectPlan(tier) {
     const orderData = await orderRes.json();
     console.log('Order data:', orderData);
     
-    if (!orderData.orderId) {
-      console.error('No orderId in response:', orderData);
-      const errorMsg = orderData.message || orderData.details || orderData.error || 'Unknown error';
-      alert('Failed to create order: ' + errorMsg);
+    if (!orderData.success || !orderData.orderId) {
+      console.error('Order creation failed:', orderData);
+      let errorMsg = 'Unknown error';
+      if (orderData.message) errorMsg = orderData.message;
+      else if (orderData.error) errorMsg = orderData.error;
+      
+      if (orderData.errorName) errorMsg += ` (${orderData.errorName})`;
+      if (orderData.errorCode) errorMsg += ` [Code: ${orderData.errorCode}]`;
+      
+      alert('Failed to create order:\n\n' + errorMsg);
       return;
     }
     

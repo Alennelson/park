@@ -139,22 +139,35 @@ router.post("/create-order", async (req, res) => {
   try {
     const { ownerId, tier } = req.body;
     
-    console.log("Creating verification order:", { ownerId, tier });
+    console.log("=== CREATE ORDER START ===");
+    console.log("Request body:", { ownerId, tier });
+    console.log("Razorpay instance exists:", !!razorpay);
+    console.log("Razorpay key ID:", RAZORPAY_KEY_ID);
     
     if (!razorpay) {
-      console.error("Razorpay not initialized");
-      return res.status(500).json({ error: "Payment system not available" });
+      console.error("ERROR: Razorpay not initialized");
+      return res.status(500).json({ 
+        success: false,
+        error: "Payment system not available",
+        message: "Razorpay is not initialized on the server"
+      });
     }
     
     if (!VERIFICATION_TIERS[tier]) {
-      console.error("Invalid tier:", tier);
-      return res.status(400).json({ error: "Invalid tier" });
+      console.error("ERROR: Invalid tier:", tier);
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid tier",
+        message: `Tier '${tier}' is not valid. Valid tiers: silver, gold, platinum`
+      });
     }
     
     const tierConfig = VERIFICATION_TIERS[tier];
     const amount = tierConfig.monthlyFee * 100; // Convert to paise
     
-    console.log("Creating Razorpay order for amount:", amount);
+    console.log("Tier config:", tierConfig);
+    console.log("Amount in paise:", amount);
+    console.log("Calling Razorpay orders.create...");
     
     const order = await razorpay.orders.create({
       amount: amount,
@@ -162,22 +175,30 @@ router.post("/create-order", async (req, res) => {
       receipt: `verify_${ownerId}_${Date.now()}`
     });
     
-    console.log("Razorpay order created:", order.id);
+    console.log("SUCCESS: Razorpay order created:", order.id);
+    console.log("=== CREATE ORDER END ===");
     
     res.json({
+      success: true,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
       keyId: RAZORPAY_KEY_ID
     });
   } catch (err) {
-    console.error("Create verification order error:", err);
+    console.error("=== CREATE ORDER ERROR ===");
+    console.error("Error name:", err.name);
+    console.error("Error message:", err.message);
+    console.error("Error code:", err.code);
+    console.error("Full error:", JSON.stringify(err, null, 2));
     console.error("Error stack:", err.stack);
+    
     res.status(500).json({ 
       success: false,
       error: "Failed to create order", 
-      message: err.message,
-      details: err.toString()
+      message: err.message || "Unknown error",
+      errorName: err.name,
+      errorCode: err.code
     });
   }
 });
