@@ -2,14 +2,24 @@ const express = require("express");
 const router = express.Router();
 const Verification = require("../models/Verification");
 const User = require("../models/user");
-const Razorpay = require("razorpay");
 const crypto = require("crypto");
 
-// Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_SETz7llzDcy8Ua",
-  key_secret: process.env.RAZORPAY_KEY_SECRET || "1myvqH79QLyk3jIa5KVArb3h"
-});
+// Razorpay configuration
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || "rzp_test_SETz7llzDcy8Ua";
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "1myvqH79QLyk3jIa5KVArb3h";
+
+// Initialize Razorpay
+let razorpay;
+try {
+  const Razorpay = require("razorpay");
+  razorpay = new Razorpay({
+    key_id: RAZORPAY_KEY_ID,
+    key_secret: RAZORPAY_KEY_SECRET
+  });
+  console.log("✅ Razorpay initialized for verification");
+} catch (err) {
+  console.error("❌ Razorpay initialization failed:", err);
+}
 
 // Verification tier configurations
 const VERIFICATION_TIERS = {
@@ -120,6 +130,11 @@ router.post("/create-order", async (req, res) => {
     
     console.log("Creating verification order:", { ownerId, tier });
     
+    if (!razorpay) {
+      console.error("Razorpay not initialized");
+      return res.status(500).json({ error: "Payment system not available" });
+    }
+    
     if (!VERIFICATION_TIERS[tier]) {
       console.error("Invalid tier:", tier);
       return res.status(400).json({ error: "Invalid tier" });
@@ -142,7 +157,7 @@ router.post("/create-order", async (req, res) => {
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      keyId: process.env.RAZORPAY_KEY_ID || "rzp_test_SETz7llzDcy8Ua"
+      keyId: RAZORPAY_KEY_ID
     });
   } catch (err) {
     console.error("Create verification order error:", err);
@@ -166,7 +181,7 @@ router.post("/verify-payment", async (req, res) => {
     // Verify signature
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSign = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "1myvqH79QLyk3jIa5KVArb3h")
+      .createHmac("sha256", RAZORPAY_KEY_SECRET)
       .update(sign.toString())
       .digest("hex");
     
