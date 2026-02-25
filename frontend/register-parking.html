@@ -65,31 +65,43 @@
 
   <!-- VEHICLE TYPES WITH PRICING -->
   <div style="background: #FFC800; padding: 15px; border-radius: 10px; margin: 10px 0;">
-    <h4 style="margin: 0 0 10px 0;">Vehicle Types & Pricing (₹/hour):</h4>
+    <h4 style="margin: 0 0 10px 0;">Vehicle Types, Pricing & Slots:</h4>
     
     <label style="display: block; margin: 12px 0; font-size: 14px;">
       <input type="checkbox" id="vehicleCar" value="car" style="width: auto; margin-right: 8px;" onchange="togglePriceInput('Car')">
       🚗 Car
     </label>
-    <input id="priceCar" type="number" placeholder="Price per hour for Car (₹)" style="display: none; margin-left: 25px; width: calc(100% - 25px);">
+    <div id="carInputs" style="display: none; margin-left: 25px;">
+      <input id="priceCar" type="number" placeholder="Price per hour (₹)" style="width: calc(50% - 5px); margin-right: 10px;">
+      <input id="slotsCar" type="number" placeholder="Number of slots" min="1" value="1" style="width: calc(50% - 5px);">
+    </div>
     
     <label style="display: block; margin: 12px 0; font-size: 14px;">
       <input type="checkbox" id="vehicleBike" value="bike" style="width: auto; margin-right: 8px;" onchange="togglePriceInput('Bike')">
       🏍️ Bike/Motorcycle
     </label>
-    <input id="priceBike" type="number" placeholder="Price per hour for Bike (₹)" style="display: none; margin-left: 25px; width: calc(100% - 25px);">
+    <div id="bikeInputs" style="display: none; margin-left: 25px;">
+      <input id="priceBike" type="number" placeholder="Price per hour (₹)" style="width: calc(50% - 5px); margin-right: 10px;">
+      <input id="slotsBike" type="number" placeholder="Number of slots" min="1" value="1" style="width: calc(50% - 5px);">
+    </div>
     
     <label style="display: block; margin: 12px 0; font-size: 14px;">
       <input type="checkbox" id="vehicleBus" value="bus" style="width: auto; margin-right: 8px;" onchange="togglePriceInput('Bus')">
       🚌 Bus
     </label>
-    <input id="priceBus" type="number" placeholder="Price per hour for Bus (₹)" style="display: none; margin-left: 25px; width: calc(100% - 25px);">
+    <div id="busInputs" style="display: none; margin-left: 25px;">
+      <input id="priceBus" type="number" placeholder="Price per hour (₹)" style="width: calc(50% - 5px); margin-right: 10px;">
+      <input id="slotsBus" type="number" placeholder="Number of slots" min="1" value="1" style="width: calc(50% - 5px);">
+    </div>
     
     <label style="display: block; margin: 12px 0; font-size: 14px;">
       <input type="checkbox" id="vehicleHeavy" value="heavy" style="width: auto; margin-right: 8px;" onchange="togglePriceInput('Heavy')">
       🚛 Heavy Vehicle/Truck
     </label>
-    <input id="priceHeavy" type="number" placeholder="Price per hour for Heavy Vehicle (₹)" style="display: none; margin-left: 25px; width: calc(100% - 25px);">
+    <div id="heavyInputs" style="display: none; margin-left: 25px;">
+      <input id="priceHeavy" type="number" placeholder="Price per hour (₹)" style="width: calc(50% - 5px); margin-right: 10px;">
+      <input id="slotsHeavy" type="number" placeholder="Number of slots" min="1" value="1" style="width: calc(50% - 5px);">
+    </div>
   </div>
 
   <!-- IMAGE UPLOAD -->
@@ -132,13 +144,14 @@ function initMap() {
 /* TOGGLE PRICE INPUT */
 function togglePriceInput(vehicleType) {
   const checkbox = document.getElementById(`vehicle${vehicleType}`);
-  const priceInput = document.getElementById(`price${vehicleType}`);
+  const inputsDiv = document.getElementById(`${vehicleType.toLowerCase()}Inputs`);
   
   if (checkbox.checked) {
-    priceInput.style.display = 'block';
+    inputsDiv.style.display = 'block';
   } else {
-    priceInput.style.display = 'none';
-    priceInput.value = '';
+    inputsDiv.style.display = 'none';
+    document.getElementById(`price${vehicleType}`).value = '';
+    document.getElementById(`slots${vehicleType}`).value = '1';
   }
 }
 
@@ -148,48 +161,73 @@ function registerParking() {
   const files = document.getElementById("images").files;
   const ownerId = localStorage.getItem("ownerId");
 
-  // Get selected vehicle types with prices
+  // Get selected vehicle types with prices and slots
   const vehicleTypes = [];
   const pricing = {};
+  const slots = {};
   
   if (document.getElementById("vehicleCar").checked) {
     const price = document.getElementById("priceCar").value;
+    const slotCount = document.getElementById("slotsCar").value;
     if (!price) {
       alert("Please enter price for Car");
       return;
     }
+    if (!slotCount || slotCount < 1) {
+      alert("Please enter number of slots for Car (minimum 1)");
+      return;
+    }
     vehicleTypes.push("car");
     pricing.car = parseFloat(price);
+    slots.car = parseInt(slotCount);
   }
   
   if (document.getElementById("vehicleBike").checked) {
     const price = document.getElementById("priceBike").value;
+    const slotCount = document.getElementById("slotsBike").value;
     if (!price) {
       alert("Please enter price for Bike");
       return;
     }
+    if (!slotCount || slotCount < 1) {
+      alert("Please enter number of slots for Bike (minimum 1)");
+      return;
+    }
     vehicleTypes.push("bike");
     pricing.bike = parseFloat(price);
+    slots.bike = parseInt(slotCount);
   }
   
   if (document.getElementById("vehicleBus").checked) {
     const price = document.getElementById("priceBus").value;
+    const slotCount = document.getElementById("slotsBus").value;
     if (!price) {
       alert("Please enter price for Bus");
       return;
     }
+    if (!slotCount || slotCount < 1) {
+      alert("Please enter number of slots for Bus (minimum 1)");
+      return;
+    }
     vehicleTypes.push("bus");
     pricing.bus = parseFloat(price);
+    slots.bus = parseInt(slotCount);
   }
   
   if (document.getElementById("vehicleHeavy").checked) {
     const price = document.getElementById("priceHeavy").value;
+    const slotCount = document.getElementById("slotsHeavy").value;
     if (!price) {
       alert("Please enter price for Heavy Vehicle");
       return;
     }
+    if (!slotCount || slotCount < 1) {
+      alert("Please enter number of slots for Heavy Vehicle (minimum 1)");
+      return;
+    }
     vehicleTypes.push("heavy");
     pricing.heavy = parseFloat(price);
+    slots.heavy = parseInt(slotCount);
   }
 
   if (!notes || !lat || !lng) {
@@ -214,6 +252,7 @@ function registerParking() {
   formData.append("lng", lng);
   formData.append("vehicleTypes", JSON.stringify(vehicleTypes));
   formData.append("pricing", JSON.stringify(pricing));
+  formData.append("slots", JSON.stringify(slots));
 
   for (let i = 0; i < files.length; i++) {
     formData.append("images", files[i]);

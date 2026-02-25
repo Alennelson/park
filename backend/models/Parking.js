@@ -8,6 +8,11 @@ const ParkingSchema = new mongoose.Schema({
     of: Number,
     default: {}
   }, // Pricing per vehicle type: { car: 50, bike: 20, bus: 100, heavy: 150 }
+  slots: {
+    type: Map,
+    of: Number,
+    default: {}
+  }, // Slot capacity per vehicle type: { car: 4, bike: 10, bus: 2, heavy: 1 }
   notes: String,
   images: [String],
   vehicleTypes: {

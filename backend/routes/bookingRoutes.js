@@ -22,19 +22,36 @@ router.post("/create", async (req, res) => {
       });
     }
 
-    // PESSIMISTIC LOCKING: Check if parking spot already has an active booking FOR THIS VEHICLE TYPE
-    const existingBooking = await Booking.findOne({
+    // Get parking details to check slot capacity
+    const parking = await Parking.findById(parkingId);
+    if (!parking) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "Parking spot not found" 
+      });
+    }
+
+    // Convert Map to object for easier access
+    const slotsObj = parking.slots ? Object.fromEntries(parking.slots) : {};
+    const maxSlots = slotsObj[vehicleType] || 1; // Default to 1 if not specified
+
+    console.log(`Parking has ${maxSlots} slots for ${vehicleType}`);
+
+    // PESSIMISTIC LOCKING: Count active bookings for this vehicle type
+    const activeBookingsCount = await Booking.countDocuments({
       parkingId: parkingId,
       vehicleType: vehicleType,
       status: { $in: ["pending", "confirmed", "active"] }
     });
 
-    if (existingBooking) {
-      console.log("BOOKING BLOCKED: Parking spot already has active booking for", vehicleType, ":", existingBooking._id);
+    console.log(`Currently ${activeBookingsCount} active bookings for ${vehicleType}`);
+
+    if (activeBookingsCount >= maxSlots) {
+      console.log("BOOKING BLOCKED: All slots full for", vehicleType);
       return res.status(409).json({ 
         success: false, 
-        error: "Parking spot is already booked for this vehicle type",
-        message: `This parking spot is currently unavailable for ${vehicleType}. Please choose another spot.`
+        error: "All slots are full",
+        message: `All ${maxSlots} ${vehicleType} slots are currently occupied. Please try another spot or wait.`
       });
     }
 
@@ -53,20 +70,14 @@ router.post("/create", async (req, res) => {
       });
     }
 
-    // Get parking details to get price if not provided
+    // Get price
     let bookingPrice = price;
     if (!bookingPrice) {
-      const parking = await Parking.findById(parkingId);
-      if (!parking) {
-        return res.status(404).json({ 
-          success: false, 
-          error: "Parking spot not found" 
-        });
-      }
-      bookingPrice = parking.price || 50;
+      const pricingObj = parking.pricing ? Object.fromEntries(parking.pricing) : {};
+      bookingPrice = pricingObj[vehicleType] || parking.price || 50;
     }
 
-    // Create booking with atomic operation
+    // Create booking
     const booking = new Booking({
       parkingId,
       userId,
@@ -79,6 +90,7 @@ router.post("/create", async (req, res) => {
     await booking.save();
 
     console.log("BOOKING CREATED:", booking._id, "for vehicle:", vehicleType);
+    console.log(`Slots used: ${activeBookingsCount + 1}/${maxSlots}`);
     console.log("=== BOOKING CREATE END ===");
 
     res.json({ success: true, bookingId: booking._id });
