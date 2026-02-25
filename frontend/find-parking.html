@@ -889,13 +889,32 @@ function closeInfo() {
 function preBook(parkingId, price){
   const userId=localStorage.getItem("ownerId");
 
+  // Disable book button to prevent double clicks
+  const bookButtons = document.querySelectorAll('.book');
+  bookButtons.forEach(btn => btn.disabled = true);
+
   fetch(getApiUrl("/api/booking/create"),{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({parkingId, userId, price})
-  }).then(()=>{
-    infoPanel.style.display="none";
-    statusPanel.style.display="block";
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      infoPanel.style.display="none";
+      statusPanel.style.display="block";
+    } else {
+      // Show error message
+      alert(data.message || data.error || "Booking failed. Please try again.");
+      // Re-enable buttons
+      bookButtons.forEach(btn => btn.disabled = false);
+    }
+  })
+  .catch(err => {
+    console.error("Booking error:", err);
+    alert("Booking failed. Please try again.");
+    // Re-enable buttons
+    bookButtons.forEach(btn => btn.disabled = false);
   });
 }
 

@@ -11,26 +11,70 @@ router.post("/create", async (req, res) => {
   try {
     const { parkingId, userId, price } = req.body;
 
+    console.log("=== BOOKING CREATE START ===");
+    console.log("Request:", { parkingId, userId, price });
+
+    // PESSIMISTIC LOCKING: Check if parking spot already has an active booking
+    const existingBooking = await Booking.findOne({
+      parkingId: parkingId,
+      status: { $in: ["pending", "confirmed", "active"] }
+    });
+
+    if (existingBooking) {
+      console.log("BOOKING BLOCKED: Parking spot already has active booking:", existingBooking._id);
+      return res.status(409).json({ 
+        success: false, 
+        error: "Parking spot is already booked",
+        message: "This parking spot is currently unavailable. Please choose another spot."
+      });
+    }
+
+    // Check if user already has an active booking
+    const userActiveBooking = await Booking.findOne({
+      userId: userId,
+      status: { $in: ["pending", "confirmed", "active"] }
+    });
+
+    if (userActiveBooking) {
+      console.log("BOOKING BLOCKED: User already has active booking:", userActiveBooking._id);
+      return res.status(409).json({ 
+        success: false, 
+        error: "You already have an active booking",
+        message: "Please complete or cancel your current booking before making a new one."
+      });
+    }
+
     // Get parking details to get price if not provided
     let bookingPrice = price;
     if (!bookingPrice) {
       const parking = await Parking.findById(parkingId);
-      bookingPrice = parking ? parking.price : 50;
+      if (!parking) {
+        return res.status(404).json({ 
+          success: false, 
+          error: "Parking spot not found" 
+        });
+      }
+      bookingPrice = parking.price || 50;
     }
 
+    // Create booking with atomic operation
     const booking = new Booking({
       parkingId,
       userId,
       price: bookingPrice,
-      status: "pending"
+      status: "pending",
+      createdAt: new Date()
     });
 
     await booking.save();
 
-    res.json({ success: true });
+    console.log("BOOKING CREATED:", booking._id);
+    console.log("=== BOOKING CREATE END ===");
+
+    res.json({ success: true, bookingId: booking._id });
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ success: false });
+    console.error("BOOKING CREATE ERROR:", err);
+    res.status(500).json({ success: false, error: "Server error" });
   }
 });
 

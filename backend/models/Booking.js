@@ -19,4 +19,9 @@ const BookingSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Indexes for pessimistic locking and fast queries
+BookingSchema.index({ parkingId: 1, status: 1 }); // Fast lookup for active bookings on a parking spot
+BookingSchema.index({ userId: 1, status: 1 }); // Fast lookup for user's active bookings
+BookingSchema.index({ createdAt: -1 }); // Fast sorting by creation date
+
 module.exports = mongoose.model("Booking", BookingSchema);
