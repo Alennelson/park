@@ -318,7 +318,8 @@ async function selectPlan(tier) {
     
     if (!orderData.orderId) {
       console.error('No orderId in response:', orderData);
-      alert('Failed to create order: ' + (orderData.error || 'Unknown error'));
+      const errorMsg = orderData.message || orderData.details || orderData.error || 'Unknown error';
+      alert('Failed to create order: ' + errorMsg);
       return;
     }
     

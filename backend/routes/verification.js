@@ -172,7 +172,13 @@ router.post("/create-order", async (req, res) => {
     });
   } catch (err) {
     console.error("Create verification order error:", err);
-    res.status(500).json({ error: "Failed to create order", details: err.message });
+    console.error("Error stack:", err.stack);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to create order", 
+      message: err.message,
+      details: err.toString()
+    });
   }
 });
 
