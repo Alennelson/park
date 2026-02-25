@@ -97,6 +97,17 @@ router.get("/plans", (req, res) => {
   res.json(VERIFICATION_TIERS);
 });
 
+/* ================= TEST ROUTE ================= */
+router.get("/test", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "Verification routes working",
+    razorpayInitialized: !!razorpay,
+    razorpayKeyId: RAZORPAY_KEY_ID ? "Set" : "Not set",
+    razorpayKeySecret: RAZORPAY_KEY_SECRET ? "Set" : "Not set"
+  });
+});
+
 /* ================= GET OWNER VERIFICATION STATUS ================= */
 router.get("/status/:ownerId", async (req, res) => {
   try {
