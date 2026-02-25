@@ -17,5 +17,9 @@ const API_CONFIG = {
 
 // Helper function to build full API URL
 function getApiUrl(endpoint) {
+  // Ensure endpoint starts with /
+  if (endpoint && !endpoint.startsWith('/')) {
+    endpoint = '/' + endpoint;
+  }
   return API_CONFIG.BASE_URL + endpoint;
 }
