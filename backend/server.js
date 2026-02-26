@@ -28,11 +28,10 @@ const walletRoutes = require("./routes/wallet");
 const reviewRoutes = require("./routes/reviews");
 const verificationRoutes = require("./routes/verification");
 
-app.use("/api/booking", require("./routes/bookingRoutes"));
+app.use("/api/booking", bookingRoutes);
 app.use("/api/parking", parkingRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/owner", ownerRoutes);
-app.use("/api/booking", bookingRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/reviews", reviewRoutes);
