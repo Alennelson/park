@@ -1376,10 +1376,6 @@ function loadPaymentsSection() {
     .then(wallet => {
       document.getElementById('paymentWalletBalance').innerText = wallet.balance || 0;
       document.getElementById('paymentTotalEarnings').innerText = wallet.totalEarnings || 0;
-      
-      // Calculate company commission (18% of total earnings)
-      const commission = Math.round((wallet.totalEarnings || 0) * 0.18);
-      document.getElementById('companyCommission').innerText = commission;
     })
     .catch(err => console.error('Load wallet error:', err));
   
@@ -1391,8 +1387,21 @@ function loadPaymentsSection() {
       
       if (transactions.length === 0) {
         list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No transactions yet</p>';
+        // Set commission to 0 if no transactions
+        document.getElementById('companyCommission').innerText = 0;
         return;
       }
+      
+      // Calculate total commission from all credit transactions
+      let totalCommission = 0;
+      transactions.forEach(tx => {
+        if (tx.type === 'credit' && tx.commission) {
+          totalCommission += tx.commission;
+        }
+      });
+      
+      // Update commission display
+      document.getElementById('companyCommission').innerText = Math.round(totalCommission);
       
       list.innerHTML = transactions.map(tx => `
         <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
@@ -1420,11 +1429,11 @@ function loadPaymentsSection() {
               </div>
               <div style="display: flex; justify-content: space-between; margin: 3px 0; color: #4CAF50;">
                 <span>Your Share (82%):</span>
-                <span><b>₹${tx.providerShare}</b></span>
+                <span><b>₹${tx.providerShare || tx.amount}</b></span>
               </div>
               <div style="display: flex; justify-content: space-between; margin: 3px 0; color: #ff9800;">
                 <span>Company Commission (18%):</span>
-                <span><b>₹${tx.commission}</b></span>
+                <span><b>₹${tx.commission || 0}</b></span>
               </div>
             </div>
           ` : ''}
