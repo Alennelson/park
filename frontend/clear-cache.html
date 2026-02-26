@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Clear Cache - ASP</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(255,255,255,0.1);
+      padding: 40px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+    }
+    h1 { margin-bottom: 20px; }
+    .instructions {
+      background: rgba(255,255,255,0.2);
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px 0;
+      text-align: left;
+    }
+    button {
+      background: #FFD400;
+      color: #333;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 10px;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #FFC800;
+    }
+    .success {
+      background: #4CAF50;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔄 Clear Browser Cache</h1>
+    <p>If you're seeing errors or old content, follow these steps:</p>
+    
+    <div class="instructions">
+      <h3>Method 1: Hard Refresh (Recommended)</h3>
+      <p><strong>Windows/Linux:</strong> Press <code>Ctrl + Shift + R</code> or <code>Ctrl + F5</code></p>
+      <p><strong>Mac:</strong> Press <code>Cmd + Shift + R</code></p>
+    </div>
+    
+    <div class="instructions">
+      <h3>Method 2: Clear Cache via Browser</h3>
+      <p>1. Press <code>Ctrl + Shift + Delete</code> (or <code>Cmd + Shift + Delete</code> on Mac)</p>
+      <p>2. Select "Cached images and files"</p>
+      <p>3. Click "Clear data"</p>
+    </div>
+    
+    <div class="instructions">
+      <h3>Method 3: Use This Button</h3>
+      <button onclick="clearCacheAndReload()">🗑️ Clear Cache & Reload Dashboard</button>
+    </div>
+    
+    <div id="success" class="success">
+      ✅ Cache cleared! Redirecting to dashboard...
+    </div>
+  </div>
+
+  <script>
+    function clearCacheAndReload() {
+      // Clear localStorage
+      const ownerId = localStorage.getItem('ownerId');
+      const name = localStorage.getItem('name');
+      const email = localStorage.getItem('email');
+      
+      if (!ownerId) {
+        alert('No user logged in. Please login first.');
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      // Show success message
+      document.getElementById('success').style.display = 'block';
+      
+      // Reload with cache bypass
+      setTimeout(() => {
+        window.location.href = 'dashboard.html?v=' + Date.now();
+      }, 1000);
+    }
+    
+    // Auto-redirect after 5 seconds
+    setTimeout(() => {
+      const ownerId = localStorage.getItem('ownerId');
+      if (ownerId) {
+        window.location.href = 'dashboard.html?v=' + Date.now();
+      }
+    }, 5000);
+  </script>
+</body>
+</html>
