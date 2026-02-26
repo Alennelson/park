@@ -700,8 +700,8 @@ async function debugWallet() {
     const completedBookings = bookings.filter(b => b.status === 'completed');
     console.log("Completed bookings:", completedBookings.length);
     
-    // Show alert with summary
-    alert(`🔍 Wallet Debug Info:
+    // Show alert with summary and fix option
+    const message = `🔍 Wallet Debug Info:
 
 Owner ID: ${ownerId}
 Wallet Balance: ₹${wallet.balance || 0}
@@ -710,12 +710,52 @@ Transactions: ${transactions.length}
 Total Bookings: ${bookings.length}
 Completed Bookings: ${completedBookings.length}
 
-Check console (F12) for detailed logs.`);
+${completedBookings.length > transactions.length ? '⚠️ You have completed bookings that were not credited!\n\nClick OK to see fix option.' : 'Everything looks good!'}`;
+    
+    alert(message);
+    
+    // If there are unprocessed bookings, offer to fix
+    if (completedBookings.length > transactions.length) {
+      if (confirm('Would you like to credit the missing payments to your wallet now?')) {
+        await fixCompletedBookings();
+      }
+    }
     
     console.log("=== WALLET DEBUG END ===");
   } catch (err) {
     console.error("Debug error:", err);
     alert("Debug failed. Check console for errors.");
+  }
+}
+
+// Fix completed bookings that weren't credited
+async function fixCompletedBookings() {
+  try {
+    console.log("Fixing completed bookings...");
+    
+    const response = await fetch(getApiUrl(`/api/payment/fix-completed-bookings/${ownerId}`), {
+      method: 'POST'
+    });
+    
+    const data = await response.json();
+    console.log("Fix result:", data);
+    
+    if (data.success) {
+      alert(`✅ Success!\n\nProcessed: ${data.processed} bookings\nCredited: ₹${data.totalCredited}\nNew Balance: ₹${data.newBalance}`);
+      
+      // Reload wallet
+      loadWallet();
+      
+      // If on payments section, reload it
+      if (document.getElementById('paymentsSection').classList.contains('active')) {
+        loadPaymentsSection();
+      }
+    } else {
+      alert('❌ Error: ' + (data.error || 'Failed to fix bookings'));
+    }
+  } catch (err) {
+    console.error("Fix error:", err);
+    alert('❌ Failed to fix bookings. Check console for errors.');
   }
 }
 

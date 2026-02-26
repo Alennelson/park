@@ -193,6 +193,119 @@ app.post("/api/payment/complete/:bookingId", async (req, res) => {
   }
 });
 
+/* ================= FIX COMPLETED BOOKINGS (MANUAL CREDIT) ================= */
+app.post("/api/payment/fix-completed-bookings/:ownerId", async (req, res) => {
+  try {
+    console.log("=== FIXING COMPLETED BOOKINGS ===");
+    console.log("Owner ID:", req.params.ownerId);
+    
+    // Get all parking spaces for this owner
+    const Parking = require("./models/Parking");
+    const parkings = await Parking.find({ ownerId: req.params.ownerId });
+    const parkingIds = parkings.map(p => p._id);
+    
+    console.log("Found parking spaces:", parkingIds.length);
+    
+    // Get all completed bookings for these parking spaces that don't have totalAmount
+    const completedBookings = await Booking.find({
+      parkingId: { $in: parkingIds },
+      status: 'completed',
+      totalAmount: { $exists: false } // Only bookings that haven't been processed
+    }).populate('parkingId');
+    
+    console.log("Found unprocessed completed bookings:", completedBookings.length);
+    
+    if (completedBookings.length === 0) {
+      return res.json({ 
+        success: true, 
+        message: "No unprocessed bookings found",
+        processed: 0
+      });
+    }
+    
+    const Wallet = require("./models/Wallet");
+    const Transaction = require("./models/Transaction");
+    const User = require("./models/user");
+    
+    let wallet = await Wallet.findOne({ ownerId: req.params.ownerId });
+    if (!wallet) {
+      wallet = new Wallet({ ownerId: req.params.ownerId });
+    }
+    
+    let totalCredited = 0;
+    let processedCount = 0;
+    
+    for (const booking of completedBookings) {
+      try {
+        // Calculate payment
+        const startTime = new Date(booking.startTime);
+        const endTime = booking.endTime ? new Date(booking.endTime) : new Date();
+        const totalMinutes = Math.ceil((endTime - startTime) / (1000 * 60));
+        const pricePerHour = booking.price || 50;
+        const pricePerMinute = pricePerHour / 60;
+        const totalAmount = Math.round(totalMinutes * pricePerMinute);
+        const providerShare = Math.round(totalAmount * 0.82);
+        const commission = totalAmount - providerShare;
+        
+        // Get driver details
+        const driver = await User.findById(booking.userId);
+        
+        // Update booking
+        await Booking.findByIdAndUpdate(booking._id, {
+          totalAmount: totalAmount,
+          completedAt: endTime
+        });
+        
+        // Credit wallet
+        wallet.balance += providerShare;
+        wallet.totalEarnings += providerShare;
+        wallet.lastTransaction = new Date();
+        
+        // Create transaction
+        const transaction = new Transaction({
+          ownerId: req.params.ownerId,
+          type: 'credit',
+          amount: providerShare,
+          description: `Parking payment from ${driver ? driver.name : 'Driver'} (Fixed)`,
+          bookingId: booking._id,
+          totalPayment: totalAmount,
+          providerShare: providerShare,
+          commission: commission,
+          driverId: booking.userId,
+          driverName: driver ? driver.name : 'Unknown',
+          parkingDuration: totalMinutes,
+          status: 'completed',
+          balanceAfter: wallet.balance
+        });
+        await transaction.save();
+        
+        totalCredited += providerShare;
+        processedCount++;
+        
+        console.log(`✅ Processed booking ${booking._id}: ₹${providerShare}`);
+      } catch (err) {
+        console.error(`❌ Error processing booking ${booking._id}:`, err);
+      }
+    }
+    
+    await wallet.save();
+    
+    console.log(`=== FIX COMPLETE: Credited ₹${totalCredited} from ${processedCount} bookings ===`);
+    
+    res.json({
+      success: true,
+      message: `Successfully credited ₹${totalCredited} from ${processedCount} bookings`,
+      processed: processedCount,
+      totalCredited: totalCredited,
+      newBalance: wallet.balance
+    });
+    
+  } catch (err) {
+    console.error("Fix bookings error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 /* ================= AUTO COMPLETE EXPIRED BOOKINGS ================= */
 setInterval(async () => {
   const now = new Date();
