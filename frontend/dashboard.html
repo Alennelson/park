@@ -544,7 +544,7 @@
     <!-- PAYMENTS SECTION -->
     <div id="paymentsSection" class="section">
       <div class="top-bar">
-        <h2>💰 Payment Details</h2>
+        <h2>💰 Payment & Wallet</h2>
       </div>
       
       <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
@@ -552,18 +552,56 @@
         <div style="font-size: 32px; font-weight: bold; margin: 10px 0;">₹<span id="paymentWalletBalance">0</span></div>
         <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px;">
           <div>
-            <div style="opacity: 0.9;">Total Received</div>
+            <div style="opacity: 0.9;">Total Earnings</div>
             <div style="font-size: 18px; font-weight: bold;">₹<span id="paymentTotalEarnings">0</span></div>
           </div>
           <div style="text-align: right;">
-            <div style="opacity: 0.9;">Company Commission (18%)</div>
+            <div style="opacity: 0.9;">ASP Commission (18%)</div>
             <div style="font-size: 18px; font-weight: bold;">₹<span id="companyCommission">0</span></div>
           </div>
         </div>
+        <button class="btn-primary" style="margin-top: 15px; background: white; color: #667eea;" onclick="showWithdrawalForm()">
+          💸 Withdraw Funds
+        </button>
+      </div>
+
+      <!-- Withdrawal Form -->
+      <div id="withdrawalForm" class="card" style="display: none;">
+        <h4>💸 Withdraw Funds</h4>
+        <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Minimum withdrawal: ₹100</p>
+        
+        <label>Account Holder Name</label>
+        <input id="withdrawAccountName" type="text" placeholder="Enter account holder name" required>
+        
+        <label>Bank Account Number</label>
+        <input id="withdrawAccountNumber" type="text" placeholder="Enter account number" required>
+        
+        <label>IFSC Code</label>
+        <input id="withdrawIfsc" type="text" placeholder="Enter IFSC code" required>
+        
+        <label>Branch Name (Optional)</label>
+        <input id="withdrawBranch" type="text" placeholder="Enter branch name">
+        
+        <label>UPI ID (Optional)</label>
+        <input id="withdrawUpi" type="text" placeholder="Enter UPI ID (e.g., name@upi)">
+        
+        <label>Withdrawal Amount (₹)</label>
+        <input id="withdrawAmount" type="number" placeholder="Enter amount" min="100" required>
+        
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+          <button class="btn-primary" onclick="submitWithdrawal()">Submit Request</button>
+          <button class="btn-primary" style="background: #999;" onclick="hideWithdrawalForm()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Withdrawal History -->
+      <div class="card">
+        <h4>Withdrawal Requests</h4>
+        <div id="withdrawalHistory"></div>
       </div>
 
       <div class="card">
-        <h4>Payment History</h4>
+        <h4>Transaction History</h4>
         <div id="paymentHistory"></div>
       </div>
     </div>
@@ -1261,7 +1299,8 @@ function loadPaymentsSection() {
       // Calculate company commission (18% of total earnings)
       const commission = Math.round((wallet.totalEarnings || 0) * 0.18);
       document.getElementById('companyCommission').innerText = commission;
-    });
+    })
+    .catch(err => console.error('Load wallet error:', err));
   
   // Load transaction history
   fetch(getApiUrl(`/api/wallet/${ownerId}/transactions`))
@@ -1270,7 +1309,7 @@ function loadPaymentsSection() {
       const list = document.getElementById('paymentHistory');
       
       if (transactions.length === 0) {
-        list.innerHTML = '<p>No transactions yet</p>';
+        list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No transactions yet</p>';
         return;
       }
       
@@ -1312,6 +1351,141 @@ function loadPaymentsSection() {
       `).join('');
     })
     .catch(err => console.error('Load transactions error:', err));
+  
+  // Load withdrawal history
+  loadWithdrawalHistory();
+}
+
+// Show withdrawal form
+function showWithdrawalForm() {
+  document.getElementById('withdrawalForm').style.display = 'block';
+  // Scroll to form
+  document.getElementById('withdrawalForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Hide withdrawal form
+function hideWithdrawalForm() {
+  document.getElementById('withdrawalForm').style.display = 'none';
+  // Clear form
+  document.getElementById('withdrawAccountName').value = '';
+  document.getElementById('withdrawAccountNumber').value = '';
+  document.getElementById('withdrawIfsc').value = '';
+  document.getElementById('withdrawBranch').value = '';
+  document.getElementById('withdrawUpi').value = '';
+  document.getElementById('withdrawAmount').value = '';
+}
+
+// Submit withdrawal request
+async function submitWithdrawal() {
+  const accountName = document.getElementById('withdrawAccountName').value.trim();
+  const accountNumber = document.getElementById('withdrawAccountNumber').value.trim();
+  const ifscCode = document.getElementById('withdrawIfsc').value.trim().toUpperCase();
+  const branch = document.getElementById('withdrawBranch').value.trim();
+  const upiId = document.getElementById('withdrawUpi').value.trim();
+  const amount = parseFloat(document.getElementById('withdrawAmount').value);
+  
+  // Validation
+  if (!accountName || !accountNumber || !ifscCode || !amount) {
+    alert('Please fill in all required fields');
+    return;
+  }
+  
+  if (amount < 100) {
+    alert('Minimum withdrawal amount is ₹100');
+    return;
+  }
+  
+  // Get current balance
+  const walletResponse = await fetch(getApiUrl(`/api/wallet/${ownerId}`));
+  const wallet = await walletResponse.json();
+  
+  if (amount > wallet.balance) {
+    alert(`Insufficient balance. Available: ₹${wallet.balance}`);
+    return;
+  }
+  
+  // Confirm withdrawal
+  if (!confirm(`Withdraw ₹${amount} to account ${accountNumber}?\n\nThis request will be processed by ASP admin.`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(getApiUrl('/api/wallet/withdraw'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ownerId,
+        amount,
+        accountHolderName: accountName,
+        accountNumber,
+        ifscCode,
+        upiId: upiId || undefined
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('✅ Withdrawal request submitted successfully!\n\nYour request is pending approval. You will receive the funds once approved by ASP admin.');
+      hideWithdrawalForm();
+      loadWithdrawalHistory();
+    } else {
+      alert('❌ Error: ' + (data.error || 'Failed to submit withdrawal request'));
+    }
+  } catch (err) {
+    console.error('Withdrawal error:', err);
+    alert('❌ Failed to submit withdrawal request. Please try again.');
+  }
+}
+
+// Load withdrawal history
+function loadWithdrawalHistory() {
+  fetch(getApiUrl(`/api/wallet/${ownerId}/withdrawals`))
+    .then(res => res.json())
+    .then(withdrawals => {
+      const list = document.getElementById('withdrawalHistory');
+      
+      if (withdrawals.length === 0) {
+        list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No withdrawal requests yet</p>';
+        return;
+      }
+      
+      list.innerHTML = withdrawals.map(w => {
+        // Status colors and icons
+        const statusConfig = {
+          pending: { color: '#ff9800', icon: '⏳', text: 'Pending' },
+          approved: { color: '#2196F3', icon: '✓', text: 'Approved' },
+          completed: { color: '#4CAF50', icon: '✓', text: 'Completed' },
+          rejected: { color: '#f44336', icon: '✗', text: 'Rejected' }
+        };
+        
+        const status = statusConfig[w.status] || statusConfig.pending;
+        
+        return `
+          <div style="border: 2px solid ${status.color}; border-radius: 8px; padding: 12px; margin-bottom: 10px; background: ${status.color}10;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-size: 20px; font-weight: bold; color: ${status.color};">
+                ₹${w.amount}
+              </div>
+              <div style="background: ${status.color}; color: white; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                ${status.icon} ${status.text}
+              </div>
+            </div>
+            
+            <div style="font-size: 13px; color: #666;">
+              <p style="margin: 4px 0;"><b>Account:</b> ${w.accountNumber}</p>
+              <p style="margin: 4px 0;"><b>IFSC:</b> ${w.ifscCode}</p>
+              <p style="margin: 4px 0;"><b>Account Holder:</b> ${w.accountHolderName}</p>
+              ${w.upiId ? `<p style="margin: 4px 0;"><b>UPI:</b> ${w.upiId}</p>` : ''}
+              <p style="margin: 4px 0;"><b>Requested:</b> ${new Date(w.requestDate || w.createdAt).toLocaleString()}</p>
+              ${w.processedDate ? `<p style="margin: 4px 0;"><b>Processed:</b> ${new Date(w.processedDate).toLocaleString()}</p>` : ''}
+              ${w.adminNotes ? `<p style="margin: 4px 0; color: ${status.color};"><b>Note:</b> ${w.adminNotes}</p>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    })
+    .catch(err => console.error('Load withdrawals error:', err));
 }
 
 // Logout
