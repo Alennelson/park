@@ -415,9 +415,14 @@
             <div style="font-size: 14px;" id="lastTransaction">-</div>
           </div>
         </div>
-        <button class="btn-primary" style="margin-top: 15px; background: white; color: #667eea;" onclick="showSection('paymentsSection')">
-          View Wallet Details
-        </button>
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+          <button class="btn-primary" style="flex: 1; background: white; color: #667eea;" onclick="showSection('paymentsSection')">
+            View Wallet Details
+          </button>
+          <button class="btn-primary" style="background: rgba(255,255,255,0.3); color: white; border: 2px solid white;" onclick="debugWallet()">
+            🔍 Debug
+          </button>
+        </div>
       </div>
 
       <!-- VERIFICATION STATUS CARD -->
@@ -669,6 +674,49 @@ function loadWallet() {
       }
     })
     .catch(err => console.error('Wallet error:', err));
+}
+
+// Debug wallet - shows detailed info
+async function debugWallet() {
+  console.log("=== WALLET DEBUG START ===");
+  console.log("Owner ID:", ownerId);
+  
+  try {
+    // Get wallet
+    const walletRes = await fetch(getApiUrl(`/api/wallet/${ownerId}`));
+    const wallet = await walletRes.json();
+    console.log("Wallet:", wallet);
+    
+    // Get transactions
+    const txRes = await fetch(getApiUrl(`/api/wallet/${ownerId}/transactions`));
+    const transactions = await txRes.json();
+    console.log("Transactions:", transactions);
+    
+    // Get bookings
+    const bookingsRes = await fetch(getApiUrl(`/api/booking/owner/${ownerId}`));
+    const bookings = await bookingsRes.json();
+    console.log("Bookings:", bookings);
+    
+    const completedBookings = bookings.filter(b => b.status === 'completed');
+    console.log("Completed bookings:", completedBookings.length);
+    
+    // Show alert with summary
+    alert(`🔍 Wallet Debug Info:
+
+Owner ID: ${ownerId}
+Wallet Balance: ₹${wallet.balance || 0}
+Total Earnings: ₹${wallet.totalEarnings || 0}
+Transactions: ${transactions.length}
+Total Bookings: ${bookings.length}
+Completed Bookings: ${completedBookings.length}
+
+Check console (F12) for detailed logs.`);
+    
+    console.log("=== WALLET DEBUG END ===");
+  } catch (err) {
+    console.error("Debug error:", err);
+    alert("Debug failed. Check console for errors.");
+  }
 }
 
 // Load verification status
