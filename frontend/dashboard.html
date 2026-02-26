@@ -628,6 +628,88 @@
         <p><b>User ID:</b> <span id="settingsId"></span></p>
       </div>
 
+      <!-- Help Desk Button -->
+      <div class="card">
+        <h4>🆘 Help & Support</h4>
+        <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Need assistance? Submit an enquiry or complaint and our team will respond within 24 hours.</p>
+        <button class="btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;" onclick="toggleHelpDesk()">
+          📝 Open Help Desk
+        </button>
+      </div>
+
+      <!-- Help Desk Section (Hidden by default) -->
+      <div id="helpDeskSection" style="display: none;">
+        
+        <!-- Submit Form -->
+        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+          <h4 style="color: white;">📝 Submit Request</h4>
+          
+          <label style="color: white;">Type</label>
+          <select id="helpType" style="background: white; color: #333;">
+            <option value="">Select type...</option>
+            <option value="enquiry">💬 Enquiry</option>
+            <option value="complaint">🚨 Complaint</option>
+          </select>
+          
+          <label style="color: white;">Subject</label>
+          <input id="helpSubject" type="text" placeholder="Brief description" style="background: white; color: #333;" required>
+          
+          <label style="color: white;">Message</label>
+          <textarea id="helpMessage" rows="5" placeholder="Describe your enquiry or complaint in detail..." style="background: white; color: #333;" required></textarea>
+          
+          <label style="color: white;">Booking ID (Optional)</label>
+          <input id="helpBookingId" type="text" placeholder="Enter booking ID if related to a booking" style="background: white; color: #333;">
+          
+          <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="btn-primary" style="background: white; color: #667eea; flex: 1;" onclick="submitHelpRequest()">
+              Submit Request
+            </button>
+            <button class="btn-primary" style="background: rgba(255,255,255,0.3); color: white; border: 2px solid white;" onclick="toggleHelpDesk()">
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <!-- My Requests -->
+        <div class="card">
+          <h4>📋 My Requests</h4>
+          <div id="helpRequestsList"></div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="card" style="background: #f5f5f5;">
+          <h4>❓ Frequently Asked Questions</h4>
+          
+          <details style="margin-bottom: 10px; cursor: pointer;">
+            <summary style="font-weight: bold; padding: 10px; background: white; border-radius: 5px;">How do I withdraw my earnings?</summary>
+            <p style="padding: 10px; color: #666; font-size: 14px;">Go to Payments section → Click "Withdraw Funds" → Enter bank details and amount (min ₹100) → Submit request.</p>
+          </details>
+          
+          <details style="margin-bottom: 10px; cursor: pointer;">
+            <summary style="font-weight: bold; padding: 10px; background: white; border-radius: 5px;">What is ASP Insurance Protection?</summary>
+            <p style="padding: 10px; color: #666; font-size: 14px;">Insurance coverage for parking damages. Three tiers: Silver (₹299), Gold (₹599), Platinum (₹999) with different coverage limits.</p>
+          </details>
+          
+          <details style="margin-bottom: 10px; cursor: pointer;">
+            <summary style="font-weight: bold; padding: 10px; background: white; border-radius: 5px;">How is commission calculated?</summary>
+            <p style="padding: 10px; color: #666; font-size: 14px;">ASP takes 18% commission. You receive 82% of each payment. Example: Driver pays ₹100 → You get ₹82, ASP gets ₹18.</p>
+          </details>
+          
+          <details style="margin-bottom: 10px; cursor: pointer;">
+            <summary style="font-weight: bold; padding: 10px; background: white; border-radius: 5px;">How do I handle disputes?</summary>
+            <p style="padding: 10px; color: #666; font-size: 14px;">Submit a complaint with booking ID. Our team investigates and resolves within 24-48 hours.</p>
+          </details>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+          <h4 style="color: white;">📞 Contact Us</h4>
+          <p><b>Email:</b> support@aspparking.com</p>
+          <p><b>Phone:</b> +91 1800-ASP-PARK</p>
+          <p><b>Hours:</b> Mon-Sat, 9 AM - 6 PM IST</p>
+        </div>
+      </div>
+
       <div class="card">
         <h4>Actions</h4>
         <button class="btn-primary" onclick="logout()">🚪 Logout</button>
@@ -1583,6 +1665,152 @@ function logout() {
   if (confirm('Are you sure you want to logout?')) {
     localStorage.clear();
     window.location.href = 'login.html';
+  }
+}
+
+// ============= HELP DESK FUNCTIONS =============
+
+// Toggle help desk visibility
+function toggleHelpDesk() {
+  const helpDesk = document.getElementById('helpDeskSection');
+  if (helpDesk.style.display === 'none') {
+    helpDesk.style.display = 'block';
+    loadHelpRequests();
+    helpDesk.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    helpDesk.style.display = 'none';
+    // Clear form
+    document.getElementById('helpType').value = '';
+    document.getElementById('helpSubject').value = '';
+    document.getElementById('helpMessage').value = '';
+    document.getElementById('helpBookingId').value = '';
+  }
+}
+
+// Submit help request
+async function submitHelpRequest() {
+  const type = document.getElementById('helpType').value;
+  const subject = document.getElementById('helpSubject').value.trim();
+  const message = document.getElementById('helpMessage').value.trim();
+  const bookingId = document.getElementById('helpBookingId').value.trim();
+  
+  // Validation
+  if (!type) {
+    alert('Please select a type (Enquiry or Complaint)');
+    return;
+  }
+  
+  if (!subject) {
+    alert('Please enter a subject');
+    return;
+  }
+  
+  if (!message) {
+    alert('Please provide a message');
+    return;
+  }
+  
+  try {
+    const response = await fetch(getApiUrl('/api/support/create'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: ownerId,
+        userName: localStorage.getItem('name'),
+        userEmail: localStorage.getItem('email'),
+        category: type,
+        priority: 'medium',
+        subject,
+        description: message,
+        bookingId: bookingId || undefined
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert(`✅ ${type === 'enquiry' ? 'Enquiry' : 'Complaint'} submitted successfully!\n\nTicket ID: ${data.ticket._id.substring(0, 8)}\n\nOur team will respond within 24 hours.`);
+      
+      // Clear form
+      document.getElementById('helpType').value = '';
+      document.getElementById('helpSubject').value = '';
+      document.getElementById('helpMessage').value = '';
+      document.getElementById('helpBookingId').value = '';
+      
+      // Reload requests
+      loadHelpRequests();
+    } else {
+      alert('❌ Error: ' + (data.error || 'Failed to submit request'));
+    }
+  } catch (err) {
+    console.error('Submit help request error:', err);
+    alert('❌ Failed to submit request. Please try again.');
+  }
+}
+
+// Load help requests
+async function loadHelpRequests() {
+  try {
+    const response = await fetch(getApiUrl(`/api/support/user/${ownerId}`));
+    const requests = await response.json();
+    
+    const list = document.getElementById('helpRequestsList');
+    
+    if (requests.length === 0) {
+      list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No requests yet</p>';
+      return;
+    }
+    
+    // Status colors
+    const statusConfig = {
+      open: { color: '#2196F3', icon: '🔵', text: 'Open' },
+      in_progress: { color: '#ff9800', icon: '🟠', text: 'In Progress' },
+      resolved: { color: '#4CAF50', icon: '🟢', text: 'Resolved' },
+      closed: { color: '#999', icon: '⚫', text: 'Closed' }
+    };
+    
+    // Type icons
+    const typeIcons = {
+      enquiry: '💬',
+      complaint: '🚨'
+    };
+    
+    list.innerHTML = requests.map(req => {
+      const status = statusConfig[req.status] || statusConfig.open;
+      const typeIcon = typeIcons[req.category] || '📌';
+      
+      return `
+        <div style="border: 2px solid ${status.color}; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: ${status.color}10;">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+            <div style="flex: 1;">
+              <h5 style="color: #333; margin-bottom: 3px; font-size: 14px;">${typeIcon} ${req.subject}</h5>
+              <div style="font-size: 11px; color: #999;">
+                ID: ${req._id.substring(0, 8)} • ${new Date(req.createdAt).toLocaleDateString()}
+              </div>
+            </div>
+            <div style="background: ${status.color}; color: white; padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; white-space: nowrap;">
+              ${status.icon} ${status.text}
+            </div>
+          </div>
+          
+          <p style="color: #666; font-size: 12px; margin: 8px 0; line-height: 1.4;">${req.description}</p>
+          
+          ${req.bookingId ? `<p style="font-size: 11px; color: #999;">📅 Booking: ${req.bookingId}</p>` : ''}
+          
+          ${req.adminResponse ? `
+            <div style="background: #e3f2fd; padding: 8px; border-radius: 6px; margin-top: 8px; border-left: 3px solid #2196F3;">
+              <b style="color: #1976d2; font-size: 12px;">Admin Response:</b>
+              <p style="color: #333; font-size: 12px; margin-top: 4px; line-height: 1.4;">${req.adminResponse}</p>
+              ${req.resolvedAt ? `<small style="color: #999; font-size: 10px;">Resolved: ${new Date(req.resolvedAt).toLocaleString()}</small>` : ''}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+    
+  } catch (err) {
+    console.error('Load help requests error:', err);
+    document.getElementById('helpRequestsList').innerHTML = '<p style="color: #f44336; text-align: center;">Failed to load requests</p>';
   }
 }
 
