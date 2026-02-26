@@ -74,7 +74,7 @@ app.post("/api/payment/complete/:bookingId", async (req, res) => {
     console.log("=== PAYMENT COMPLETE START ===");
     console.log("Booking ID:", req.params.bookingId);
     
-    const booking = await Booking.findById(req.params.bookingId).populate('parkingId');
+    const booking = await Booking.findById(req.params.bookingId);
     
     if (!booking) {
       console.error("Booking not found:", req.params.bookingId);
@@ -84,10 +84,23 @@ app.post("/api/payment/complete/:bookingId", async (req, res) => {
     console.log("Booking found:", {
       id: booking._id,
       userId: booking.userId,
-      parkingId: booking.parkingId ? booking.parkingId._id : 'NOT POPULATED',
-      ownerId: booking.parkingId ? booking.parkingId.ownerId : 'NO OWNER',
+      parkingId: booking.parkingId,
       status: booking.status,
       startTime: booking.startTime
+    });
+
+    // IMPORTANT: Manually fetch parking since parkingId is stored as String, not ObjectId
+    const Parking = require("./models/Parking");
+    const parking = await Parking.findById(booking.parkingId);
+    
+    if (!parking) {
+      console.error("Parking not found:", booking.parkingId);
+      return res.status(404).json({ success: false, error: "Parking not found" });
+    }
+    
+    console.log("Parking found:", {
+      id: parking._id,
+      ownerId: parking.ownerId
     });
 
     // Calculate payment amount based on actual minutes
@@ -132,17 +145,17 @@ app.post("/api/payment/complete/:bookingId", async (req, res) => {
     console.log("Driver found:", driver ? driver.name : "NOT FOUND");
 
     // Credit wallet (82% to provider)
-    if (booking.parkingId && booking.parkingId.ownerId) {
-      console.log("Crediting wallet for owner:", booking.parkingId.ownerId);
+    if (parking && parking.ownerId) {
+      console.log("Crediting wallet for owner:", parking.ownerId);
       
       const Wallet = require("./models/Wallet");
       const Transaction = require("./models/Transaction");
       
-      let wallet = await Wallet.findOne({ ownerId: booking.parkingId.ownerId });
+      let wallet = await Wallet.findOne({ ownerId: parking.ownerId });
       
       if (!wallet) {
-        console.log("Creating new wallet for owner:", booking.parkingId.ownerId);
-        wallet = new Wallet({ ownerId: booking.parkingId.ownerId });
+        console.log("Creating new wallet for owner:", parking.ownerId);
+        wallet = new Wallet({ ownerId: parking.ownerId });
       } else {
         console.log("Existing wallet found. Current balance:", wallet.balance);
       }
@@ -156,7 +169,7 @@ app.post("/api/payment/complete/:bookingId", async (req, res) => {
       
       // Create detailed transaction record
       const transaction = new Transaction({
-        ownerId: booking.parkingId.ownerId,
+        ownerId: parking.ownerId,
         type: 'credit',
         amount: providerShare,
         description: `Parking payment from ${driver ? driver.name : 'Driver'}`,
@@ -178,9 +191,9 @@ app.post("/api/payment/complete/:bookingId", async (req, res) => {
       console.log(`✅ Payment completed: Total ₹${totalAmount}, Provider gets ₹${providerShare}, Commission ₹${commission}`);
       console.log("=== PAYMENT COMPLETE SUCCESS ===");
     } else {
-      console.error("❌ Cannot credit wallet - parkingId or ownerId missing");
-      console.error("booking.parkingId:", booking.parkingId);
-      console.error("booking.parkingId.ownerId:", booking.parkingId ? booking.parkingId.ownerId : 'N/A');
+      console.error("❌ Cannot credit wallet - parking or ownerId missing");
+      console.error("parking:", parking);
+      console.error("parking.ownerId:", parking ? parking.ownerId : 'N/A');
     }
 
     res.json({ success: true });
