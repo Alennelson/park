@@ -3,6 +3,10 @@
 <head>
   <title>ASP Dashboard - A Space for Park</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <!-- Version: 2.1.0 - Wallet System Fixed -->
   <script src="config.js"></script>
 
   <style>
@@ -411,7 +415,7 @@
             <div style="font-size: 14px;" id="lastTransaction">-</div>
           </div>
         </div>
-        <button class="btn-primary" style="margin-top: 15px; background: white; color: #667eea;" onclick="showSection('walletSection')">
+        <button class="btn-primary" style="margin-top: 15px; background: white; color: #667eea;" onclick="showSection('paymentsSection')">
           View Wallet Details
         </button>
       </div>
@@ -651,9 +655,11 @@ document.getElementById("settingsId").innerText = ownerId || "N/A";
 
 // Load wallet balance
 function loadWallet() {
+  console.log("Loading wallet for owner:", ownerId);
   fetch(getApiUrl(`/api/wallet/${ownerId}`))
     .then(res => res.json())
     .then(wallet => {
+      console.log("Wallet data received:", wallet);
       document.getElementById('walletBalance').innerText = wallet.balance || 0;
       document.getElementById('totalEarnings').innerText = wallet.totalEarnings || 0;
       
@@ -732,10 +738,17 @@ function loadVerificationStatus() {
 // Show section and update menu
 
 function showSection(sectionId) {
+  // Check if section exists
+  const section = document.getElementById(sectionId);
+  if (!section) {
+    console.error('Section not found:', sectionId);
+    return;
+  }
+  
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
   
-  document.getElementById(sectionId).classList.add('active');
+  section.classList.add('active');
   
   const menuItems = document.querySelectorAll('.menu-item');
   if (sectionId === 'dashboardSection') {
@@ -760,29 +773,9 @@ function showSection(sectionId) {
 
 // Load dashboard statistics
 function loadDashboardStats() {
-  fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
-    .then(res => res.json())
-    .then(data => {
-      const total = data.length;
-      const active = data.filter(b => b.status === 'active').length;
-      
-      let totalHours = 0;
-      let totalEarnings = 0;
-      
-      data.forEach(booking => {
-        if (booking.startTime && booking.endTime) {
-          const hours = (new Date(booking.endTime) - new Date(booking.startTime)) / (1000 * 60 * 60);
-          totalHours += hours;
-          totalEarnings += hours * (booking.price || 0);
-        }
-      });
-      
-      document.getElementById('totalBookings').innerText = total;
-      document.getElementById('activeBookings').innerText = active;
-      document.getElementById('totalHours').innerText = Math.round(totalHours);
-      document.getElementById('totalEarnings').innerText = Math.round(totalEarnings);
-    })
-    .catch(err => console.error('Stats error:', err));
+  // This function is called when dashboard loads
+  // Just load wallet data, no need for booking stats here
+  loadWallet();
 }
 
 // Load detailed statistics
