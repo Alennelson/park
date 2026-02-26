@@ -1128,9 +1128,17 @@ async function completePayment(total, minutes) {
           console.log("Payment verified, completing booking...");
           
           // Complete booking
-          await fetch(getApiUrl(`/api/payment/complete/${currentBooking._id}`), {
+          const completeRes = await fetch(getApiUrl(`/api/payment/complete/${currentBooking._id}`), {
             method: "POST"
           });
+          
+          const completeData = await completeRes.json();
+          console.log("Payment complete response:", completeData);
+          
+          if (!completeData.success) {
+            console.error("Payment completion failed:", completeData);
+            alert("Warning: Payment verified but completion failed. Please contact support.");
+          }
 
           clearInterval(timerInterval);
           priceText.innerText = `✅ Payment Success!\nTime: ${minutes} min\nPaid: ₹${total}`;

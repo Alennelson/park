@@ -72,11 +72,24 @@ app.get("/api/booking/driver/:userId", async (req, res) => {
 */
 app.post("/api/payment/complete/:bookingId", async (req, res) => {
   try {
+    console.log("=== PAYMENT COMPLETE START ===");
+    console.log("Booking ID:", req.params.bookingId);
+    
     const booking = await Booking.findById(req.params.bookingId).populate('parkingId');
     
     if (!booking) {
+      console.error("Booking not found:", req.params.bookingId);
       return res.status(404).json({ success: false, error: "Booking not found" });
     }
+
+    console.log("Booking found:", {
+      id: booking._id,
+      userId: booking.userId,
+      parkingId: booking.parkingId ? booking.parkingId._id : 'NOT POPULATED',
+      ownerId: booking.parkingId ? booking.parkingId.ownerId : 'NO OWNER',
+      status: booking.status,
+      startTime: booking.startTime
+    });
 
     // Calculate payment amount based on actual minutes
     const startTime = new Date(booking.startTime);
@@ -86,9 +99,23 @@ app.post("/api/payment/complete/:bookingId", async (req, res) => {
     const pricePerMinute = pricePerHour / 60;
     const totalAmount = Math.round(totalMinutes * pricePerMinute);
 
+    console.log("Payment calculation:", {
+      startTime,
+      endTime,
+      totalMinutes,
+      pricePerHour,
+      totalAmount
+    });
+
     // Calculate commission breakdown
     const providerShare = Math.round(totalAmount * 0.82); // 82% to provider
     const commission = totalAmount - providerShare; // 18% company commission
+
+    console.log("Commission breakdown:", {
+      totalAmount,
+      providerShare,
+      commission
+    });
 
     // Update booking status
     await Booking.findByIdAndUpdate(req.params.bookingId, {
@@ -98,25 +125,35 @@ app.post("/api/payment/complete/:bookingId", async (req, res) => {
       totalAmount: totalAmount
     });
 
+    console.log("Booking updated to completed");
+
     // Get driver details
     const User = require("./models/user");
     const driver = await User.findById(booking.userId);
+    console.log("Driver found:", driver ? driver.name : "NOT FOUND");
 
     // Credit wallet (82% to provider)
     if (booking.parkingId && booking.parkingId.ownerId) {
+      console.log("Crediting wallet for owner:", booking.parkingId.ownerId);
+      
       const Wallet = require("./models/Wallet");
       const Transaction = require("./models/Transaction");
       
       let wallet = await Wallet.findOne({ ownerId: booking.parkingId.ownerId });
       
       if (!wallet) {
+        console.log("Creating new wallet for owner:", booking.parkingId.ownerId);
         wallet = new Wallet({ ownerId: booking.parkingId.ownerId });
+      } else {
+        console.log("Existing wallet found. Current balance:", wallet.balance);
       }
       
       wallet.balance += providerShare;
       wallet.totalEarnings += providerShare;
       wallet.lastTransaction = new Date();
       await wallet.save();
+      
+      console.log("Wallet updated. New balance:", wallet.balance);
       
       // Create detailed transaction record
       const transaction = new Transaction({
@@ -138,14 +175,22 @@ app.post("/api/payment/complete/:bookingId", async (req, res) => {
       });
       await transaction.save();
       
-      console.log(`Payment completed: Total ₹${totalAmount}, Provider gets ₹${providerShare}, Commission ₹${commission}`);
+      console.log("Transaction created:", transaction._id);
+      console.log(`✅ Payment completed: Total ₹${totalAmount}, Provider gets ₹${providerShare}, Commission ₹${commission}`);
+      console.log("=== PAYMENT COMPLETE SUCCESS ===");
+    } else {
+      console.error("❌ Cannot credit wallet - parkingId or ownerId missing");
+      console.error("booking.parkingId:", booking.parkingId);
+      console.error("booking.parkingId.ownerId:", booking.parkingId ? booking.parkingId.ownerId : 'N/A');
     }
 
     res.json({ success: true });
 
   } catch (err) {
-    console.error("Payment complete error:", err);
-    res.status(500).json({ success: false });
+    console.error("=== PAYMENT COMPLETE ERROR ===");
+    console.error("Error:", err);
+    console.error("Stack:", err.stack);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
