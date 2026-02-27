@@ -645,7 +645,7 @@
           <h4 style="color: white;">📝 Submit Request</h4>
           
           <label style="color: white;">Type</label>
-          <select id="helpType" style="background: white; color: #333;">
+          <select id="helpType" style="background: white; color: #333;" onchange="toggleImageUpload()">
             <option value="">Select type...</option>
             <option value="enquiry">💬 Enquiry</option>
             <option value="complaint">🚨 Complaint</option>
@@ -659,6 +659,14 @@
           
           <label style="color: white;">Booking ID (Optional)</label>
           <input id="helpBookingId" type="text" placeholder="Enter booking ID if related to a booking" style="background: white; color: #333;">
+          
+          <!-- Image Upload (Only for Complaints) -->
+          <div id="imageUploadSection" style="display: none;">
+            <label style="color: white;">Upload Images (Optional)</label>
+            <p style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Upload photos of the accident or damage (Max 5 images, 5MB each)</p>
+            <input id="helpImages" type="file" accept="image/*" multiple style="background: white; color: #333; padding: 8px;">
+            <div id="imagePreview" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;"></div>
+          </div>
           
           <div style="display: flex; gap: 10px; margin-top: 15px;">
             <button class="btn-primary" style="background: white; color: #667eea; flex: 1;" onclick="submitHelpRequest()">
@@ -1670,6 +1678,59 @@ function logout() {
 
 // ============= HELP DESK FUNCTIONS =============
 
+// Toggle image upload section based on type
+function toggleImageUpload() {
+  const type = document.getElementById('helpType').value;
+  const imageSection = document.getElementById('imageUploadSection');
+  
+  if (type === 'complaint') {
+    imageSection.style.display = 'block';
+  } else {
+    imageSection.style.display = 'none';
+    document.getElementById('helpImages').value = '';
+    document.getElementById('imagePreview').innerHTML = '';
+  }
+}
+
+// Preview selected images
+document.addEventListener('DOMContentLoaded', function() {
+  const imageInput = document.getElementById('helpImages');
+  if (imageInput) {
+    imageInput.addEventListener('change', function(e) {
+      const preview = document.getElementById('imagePreview');
+      preview.innerHTML = '';
+      
+      const files = Array.from(e.target.files);
+      
+      if (files.length > 5) {
+        alert('Maximum 5 images allowed');
+        e.target.value = '';
+        return;
+      }
+      
+      files.forEach((file, index) => {
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`Image ${index + 1} is too large. Maximum size is 5MB.`);
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const img = document.createElement('img');
+          img.src = event.target.result;
+          img.style.width = '80px';
+          img.style.height = '80px';
+          img.style.objectFit = 'cover';
+          img.style.borderRadius = '8px';
+          img.style.border = '2px solid white';
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  }
+});
+
 // Toggle help desk visibility
 function toggleHelpDesk() {
   const helpDesk = document.getElementById('helpDeskSection');
@@ -1684,15 +1745,19 @@ function toggleHelpDesk() {
     document.getElementById('helpSubject').value = '';
     document.getElementById('helpMessage').value = '';
     document.getElementById('helpBookingId').value = '';
+    document.getElementById('helpImages').value = '';
+    document.getElementById('imagePreview').innerHTML = '';
+    document.getElementById('imageUploadSection').style.display = 'none';
   }
 }
 
-// Submit help request
+// Submit help request with images
 async function submitHelpRequest() {
   const type = document.getElementById('helpType').value;
   const subject = document.getElementById('helpSubject').value.trim();
   const message = document.getElementById('helpMessage').value.trim();
   const bookingId = document.getElementById('helpBookingId').value.trim();
+  const imageFiles = document.getElementById('helpImages').files;
   
   // Validation
   if (!type) {
@@ -1710,32 +1775,50 @@ async function submitHelpRequest() {
     return;
   }
   
+  // Validate images for complaints
+  if (type === 'complaint' && imageFiles.length > 5) {
+    alert('Maximum 5 images allowed');
+    return;
+  }
+  
   try {
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append('userId', ownerId);
+    formData.append('userName', localStorage.getItem('name'));
+    formData.append('userEmail', localStorage.getItem('email'));
+    formData.append('category', type);
+    formData.append('priority', 'medium');
+    formData.append('subject', subject);
+    formData.append('description', message);
+    if (bookingId) formData.append('bookingId', bookingId);
+    
+    // Add images if complaint
+    if (type === 'complaint' && imageFiles.length > 0) {
+      for (let i = 0; i < imageFiles.length; i++) {
+        formData.append('images', imageFiles[i]);
+      }
+    }
+    
     const response = await fetch(getApiUrl('/api/support/create'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: ownerId,
-        userName: localStorage.getItem('name'),
-        userEmail: localStorage.getItem('email'),
-        category: type,
-        priority: 'medium',
-        subject,
-        description: message,
-        bookingId: bookingId || undefined
-      })
+      body: formData // Don't set Content-Type header, browser will set it with boundary
     });
     
     const data = await response.json();
     
     if (data.success) {
-      alert(`✅ ${type === 'enquiry' ? 'Enquiry' : 'Complaint'} submitted successfully!\n\nTicket ID: ${data.ticket._id.substring(0, 8)}\n\nOur team will respond within 24 hours.`);
+      const imageCount = imageFiles.length;
+      alert(`✅ ${type === 'enquiry' ? 'Enquiry' : 'Complaint'} submitted successfully!\n\nTicket ID: ${data.ticket._id.substring(0, 8)}${imageCount > 0 ? `\nImages uploaded: ${imageCount}` : ''}\n\nOur team will respond within 24 hours.`);
       
       // Clear form
       document.getElementById('helpType').value = '';
       document.getElementById('helpSubject').value = '';
       document.getElementById('helpMessage').value = '';
       document.getElementById('helpBookingId').value = '';
+      document.getElementById('helpImages').value = '';
+      document.getElementById('imagePreview').innerHTML = '';
+      document.getElementById('imageUploadSection').style.display = 'none';
       
       // Reload requests
       loadHelpRequests();
@@ -1779,6 +1862,25 @@ async function loadHelpRequests() {
       const status = statusConfig[req.status] || statusConfig.open;
       const typeIcon = typeIcons[req.category] || '📌';
       
+      // Generate image gallery if attachments exist
+      let imageGallery = '';
+      if (req.attachments && req.attachments.length > 0) {
+        imageGallery = `
+          <div style="margin-top: 10px;">
+            <b style="font-size: 12px; color: #666;">📷 Attached Images (${req.attachments.length}):</b>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+              ${req.attachments.map(img => `
+                <img src="${getApiUrl('/' + img)}" 
+                     onclick="window.open('${getApiUrl('/' + img)}', '_blank')"
+                     style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 2px solid #ddd;"
+                     onerror="this.style.display='none'"
+                     title="Click to view full size">
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+      
       return `
         <div style="border: 2px solid ${status.color}; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: ${status.color}10;">
           <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
@@ -1796,6 +1898,8 @@ async function loadHelpRequests() {
           <p style="color: #666; font-size: 12px; margin: 8px 0; line-height: 1.4;">${req.description}</p>
           
           ${req.bookingId ? `<p style="font-size: 11px; color: #999;">📅 Booking: ${req.bookingId}</p>` : ''}
+          
+          ${imageGallery}
           
           ${req.adminResponse ? `
             <div style="background: #e3f2fd; padding: 8px; border-radius: 6px; margin-top: 8px; border-left: 3px solid #2196F3;">
