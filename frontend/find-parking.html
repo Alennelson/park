@@ -379,6 +379,54 @@
       background: #777 !important;
     }
 
+    .report-btn {
+      background: #ff4444 !important;
+      margin-top: 10px !important;
+      display: none;
+    }
+
+    .report-btn:hover {
+      background: #cc0000 !important;
+    }
+
+    .report-btn.show {
+      display: block;
+    }
+
+    .report-reasons {
+      text-align: left;
+      margin: 15px 0;
+      display: none;
+    }
+
+    .report-reasons.show {
+      display: block;
+    }
+
+    .report-reasons label {
+      display: block;
+      padding: 10px;
+      margin: 5px 0;
+      background: #f5f5f5;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .report-reasons input[type="checkbox"] {
+      margin-right: 8px;
+    }
+
+    .report-reasons textarea {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-size: 14px;
+      resize: none;
+    }
+
     /* Image Preview Modal */
     .image-modal {
       position: absolute;
@@ -556,7 +604,42 @@
       
       <textarea id="reviewComment" placeholder="Share your experience (optional)" rows="3"></textarea>
       
+      <!-- Report Section (shows for 1-2 stars) -->
+      <div class="report-reasons" id="reportReasons">
+        <p style="font-weight: bold; color: #ff4444; margin-bottom: 10px;">🚨 Report Issues (Select all that apply):</p>
+        <label>
+          <input type="checkbox" value="dirty" class="report-checkbox">
+          Dirty or poorly maintained space
+        </label>
+        <label>
+          <input type="checkbox" value="unsafe" class="report-checkbox">
+          Unsafe or insecure location
+        </label>
+        <label>
+          <input type="checkbox" value="misleading" class="report-checkbox">
+          Misleading photos or description
+        </label>
+        <label>
+          <input type="checkbox" value="rude" class="report-checkbox">
+          Rude or unprofessional provider
+        </label>
+        <label>
+          <input type="checkbox" value="overpriced" class="report-checkbox">
+          Overpriced for the quality
+        </label>
+        <label>
+          <input type="checkbox" value="unavailable" class="report-checkbox">
+          Space was not available as listed
+        </label>
+        <label>
+          <input type="checkbox" value="other" class="report-checkbox">
+          Other issue
+        </label>
+        <textarea id="reportDetails" placeholder="Additional details about the issue..." rows="3"></textarea>
+      </div>
+      
       <button onclick="submitRating()">Submit Rating</button>
+      <button class="report-btn" id="reportBtn" onclick="submitWithReport()">🚨 Submit Rating & Report</button>
       <button class="skip-btn" onclick="skipRating()">Skip</button>
     </div>
   </div>
@@ -1192,6 +1275,21 @@ function setRating(rating) {
       star.classList.remove('active');
     }
   });
+  
+  // Show report section for 1-2 stars
+  const reportReasons = document.getElementById('reportReasons');
+  const reportBtn = document.getElementById('reportBtn');
+  const submitBtn = document.querySelector('.rating-card button:not(.report-btn):not(.skip-btn)');
+  
+  if (rating <= 2) {
+    reportReasons.classList.add('show');
+    reportBtn.classList.add('show');
+    submitBtn.style.display = 'none'; // Hide normal submit button
+  } else {
+    reportReasons.classList.remove('show');
+    reportBtn.classList.remove('show');
+    submitBtn.style.display = 'block'; // Show normal submit button
+  }
 }
 
 function submitRating() {
@@ -1229,6 +1327,81 @@ function submitRating() {
   .catch(err => {
     console.error('Rating error:', err);
     alert('Failed to submit rating');
+  });
+}
+
+function submitWithReport() {
+  if (selectedRating === 0) {
+    alert('Please select a rating');
+    return;
+  }
+
+  // Get selected report reasons
+  const checkboxes = document.querySelectorAll('.report-checkbox:checked');
+  const reasons = Array.from(checkboxes).map(cb => cb.value);
+  
+  if (reasons.length === 0) {
+    alert('Please select at least one issue to report');
+    return;
+  }
+
+  const comment = document.getElementById('reviewComment').value;
+  const reportDetails = document.getElementById('reportDetails').value;
+  const userId = localStorage.getItem('ownerId');
+  const userName = localStorage.getItem('name');
+  const userEmail = localStorage.getItem('email');
+
+  // First submit the rating
+  fetch(getApiUrl('/api/reviews/submit'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      parkingId: currentBooking.parkingId || currentBooking.parking._id,
+      userId: userId,
+      userName: userName,
+      rating: selectedRating,
+      comment: comment,
+      bookingId: currentBooking._id
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      // Now submit the report
+      return fetch(getApiUrl('/api/reports/submit'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parkingId: currentBooking.parkingId || currentBooking.parking._id,
+          providerId: currentBooking.ownerId,
+          reporterId: userId,
+          reporterName: userName,
+          reporterEmail: userEmail,
+          bookingId: currentBooking._id,
+          rating: selectedRating,
+          reasons: reasons,
+          details: reportDetails,
+          reviewComment: comment
+        })
+      });
+    } else {
+      throw new Error(data.error || 'Failed to submit rating');
+    }
+  })
+  .then(r => r.json())
+  .then(reportData => {
+    if (reportData.success) {
+      alert('✅ Thank you for your feedback!\n\nYour rating and report have been submitted. Our admin team will review this case.');
+      document.getElementById('ratingPopup').classList.remove('active');
+      window.location.href = 'dashboard.html';
+    } else {
+      alert('Rating submitted but report failed: ' + (reportData.error || 'Unknown error'));
+      window.location.href = 'dashboard.html';
+    }
+  })
+  .catch(err => {
+    console.error('Submit error:', err);
+    alert('Error: ' + err.message);
   });
 }
 
