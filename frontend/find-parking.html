@@ -1370,10 +1370,20 @@ function submitWithReport() {
   const userId = localStorage.getItem('ownerId');
   const userName = localStorage.getItem('name');
   const userEmail = localStorage.getItem('email');
+  
+  // Get provider ID from parking space
+  const parkingId = currentBooking.parkingId || currentBooking.parking?._id;
+  const providerId = currentBooking.parking?.ownerId || currentBooking.ownerId;
+  
+  if (!providerId) {
+    alert('Error: Cannot identify parking provider. Please try again.');
+    console.error('Provider ID not found in booking:', currentBooking);
+    return;
+  }
 
   console.log('Submitting report with data:', {
-    parkingId: currentBooking.parkingId || currentBooking.parking._id,
-    providerId: currentBooking.ownerId,
+    parkingId: parkingId,
+    providerId: providerId,
     rating: selectedRating,
     reasons: reasons
   });
@@ -1383,7 +1393,7 @@ function submitWithReport() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      parkingId: currentBooking.parkingId || currentBooking.parking._id,
+      parkingId: parkingId,
       userId: userId,
       userName: userName,
       rating: selectedRating,
@@ -1407,8 +1417,8 @@ function submitWithReport() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          parkingId: currentBooking.parkingId || currentBooking.parking._id,
-          providerId: currentBooking.ownerId,
+          parkingId: parkingId,
+          providerId: providerId,
           reporterId: userId,
           reporterName: userName,
           reporterEmail: userEmail,
@@ -1433,7 +1443,7 @@ function submitWithReport() {
   .then(reportData => {
     console.log('Report response:', reportData);
     if (reportData.success) {
-      alert('✅ Thank you for your feedback!\n\nYour rating and report have been submitted. Our admin team will review this case.');
+      alert('✅ Thank you for your feedback!\n\nYour rating and report have been submitted to admin. The admin team will review this provider and take appropriate action.');
       document.getElementById('ratingPopup').classList.remove('active');
       window.location.href = 'dashboard.html';
     } else {
@@ -1443,7 +1453,7 @@ function submitWithReport() {
   })
   .catch(err => {
     console.error('Submit error:', err);
-    alert('Error: ' + err.message + '\n\nPlease make sure the backend server is running and try again.');
+    alert('Error: ' + err.message + '\n\nYour rating was saved but the report may not have been submitted. Please contact support if the issue persists.');
   });
 }
 
