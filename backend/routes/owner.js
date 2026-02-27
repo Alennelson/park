@@ -93,3 +93,65 @@ router.get("/nearby", async (req, res) => {
 
   res.json(owners);
 });
+
+/* ================= ADMIN ENDPOINTS ================= */
+
+// Get all users (Admin)
+router.get("/all", async (req, res) => {
+  try {
+    const users = await ParkingOwner.find().sort({ createdAt: -1 });
+    res.json(users);
+  } catch (err) {
+    console.error("Get all users error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Get single user (Admin)
+router.get("/:userId", async (req, res) => {
+  try {
+    const user = await ParkingOwner.findById(req.params.userId);
+    res.json(user);
+  } catch (err) {
+    console.error("Get user error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Delete provider account (Admin)
+router.delete("/admin/delete/:providerId", async (req, res) => {
+  try {
+    const { reason } = req.body;
+    
+    // Delete provider
+    const provider = await ParkingOwner.findByIdAndDelete(req.params.providerId);
+    if (!provider) {
+      return res.json({ success: false, error: 'Provider not found' });
+    }
+    
+    // Delete all parking spaces owned by this provider
+    const Parking = require('../models/Parking');
+    await Parking.deleteMany({ ownerId: req.params.providerId });
+    
+    // Cancel active bookings
+    const Booking = require('../models/Booking');
+    await Booking.updateMany(
+      { ownerId: req.params.providerId, status: { $in: ['pending', 'confirmed', 'active'] } },
+      { status: 'cancelled', notes: reason || 'Provider account deleted by admin' }
+    );
+    
+    console.log(`Provider ${provider.name} (${provider.email}) deleted by admin. Reason: ${reason}`);
+    
+    res.json({
+      success: true,
+      message: 'Provider account and all associated data deleted',
+      deletedProvider: {
+        name: provider.name,
+        email: provider.email
+      }
+    });
+  } catch (err) {
+    console.error("Delete provider error:", err);
+    res.json({ success: false, error: err.message });
+  }
+});

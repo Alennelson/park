@@ -167,3 +167,56 @@ router.post("/admin/update/:ticketId", async (req, res) => {
 });
 
 module.exports = router;
+
+/* ================= ADMIN ENDPOINTS ================= */
+
+// Get all open tickets (Admin)
+router.get("/admin/open", async (req, res) => {
+  try {
+    const tickets = await SupportTicket.find({ status: { $in: ['open', 'in_progress'] } })
+      .sort({ priority: -1, createdAt: -1 });
+    
+    res.json(tickets);
+  } catch (err) {
+    console.error("Get open tickets error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Get single ticket (Admin)
+router.get("/ticket/:ticketId", async (req, res) => {
+  try {
+    const ticket = await SupportTicket.findById(req.params.ticketId);
+    res.json(ticket);
+  } catch (err) {
+    console.error("Get ticket error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Resolve ticket (Admin)
+router.post("/admin/resolve/:ticketId", async (req, res) => {
+  try {
+    const { adminResponse, resolvedBy } = req.body;
+    
+    const ticket = await SupportTicket.findById(req.params.ticketId);
+    if (!ticket) {
+      return res.json({ success: false, error: 'Ticket not found' });
+    }
+    
+    ticket.status = 'resolved';
+    ticket.adminResponse = adminResponse;
+    ticket.resolvedAt = new Date();
+    ticket.resolvedBy = resolvedBy || 'Admin';
+    await ticket.save();
+    
+    res.json({
+      success: true,
+      message: 'Ticket resolved',
+      ticket: ticket
+    });
+  } catch (err) {
+    console.error("Resolve ticket error:", err);
+    res.json({ success: false, error: err.message });
+  }
+});

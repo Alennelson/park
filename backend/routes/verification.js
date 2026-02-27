@@ -326,3 +326,57 @@ setInterval(async () => {
 }, 3600000); // Every hour
 
 module.exports = router;
+
+/* ================= ADMIN ENDPOINTS ================= */
+
+// Process insurance claim (Admin)
+router.post("/process-claim", async (req, res) => {
+  try {
+    const { userId, ticketId, claimAmount, reason } = req.body;
+    
+    // Get verification
+    const verification = await Verification.findOne({ userId, status: 'active' });
+    if (!verification) {
+      return res.json({ success: false, error: 'No active insurance found' });
+    }
+    
+    // Check claim limit
+    if (claimAmount > verification.claimLimit) {
+      return res.json({ success: false, error: 'Claim amount exceeds tier limit' });
+    }
+    
+    // Credit to wallet
+    const Wallet = require('../models/Wallet');
+    const Transaction = require('../models/Transaction');
+    
+    let wallet = await Wallet.findOne({ ownerId: userId });
+    if (!wallet) {
+      wallet = new Wallet({ ownerId: userId });
+    }
+    
+    wallet.balance += claimAmount;
+    wallet.totalEarnings += claimAmount;
+    wallet.lastTransaction = new Date();
+    await wallet.save();
+    
+    // Create transaction
+    const transaction = new Transaction({
+      ownerId: userId,
+      type: 'credit',
+      amount: claimAmount,
+      description: `Insurance claim: ${reason}`,
+      balanceAfter: wallet.balance
+    });
+    await transaction.save();
+    
+    res.json({
+      success: true,
+      message: 'Insurance claim processed',
+      claimAmount: claimAmount,
+      newBalance: wallet.balance
+    });
+  } catch (err) {
+    console.error("Process claim error:", err);
+    res.json({ success: false, error: err.message });
+  }
+});

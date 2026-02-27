@@ -221,3 +221,98 @@ router.post("/admin/reject/:withdrawalId", async (req, res) => {
 });
 
 module.exports = router;
+
+/* ================= ADMIN ENDPOINTS ================= */
+
+// Get all pending withdrawals (Admin)
+router.get("/admin/pending-withdrawals", async (req, res) => {
+  try {
+    const withdrawals = await Withdrawal.find({ status: 'pending' })
+      .populate('ownerId', 'name email')
+      .sort({ createdAt: -1 });
+    
+    res.json(withdrawals);
+  } catch (err) {
+    console.error("Get pending withdrawals error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Approve withdrawal (Admin)
+router.post("/admin/approve-withdrawal/:withdrawalId", async (req, res) => {
+  try {
+    const { ownerId, amount, adminNotes } = req.body;
+    
+    // Get withdrawal
+    const withdrawal = await Withdrawal.findById(req.params.withdrawalId);
+    if (!withdrawal) {
+      return res.json({ success: false, error: 'Withdrawal not found' });
+    }
+    
+    // Get wallet
+    const wallet = await Wallet.findOne({ ownerId });
+    if (!wallet) {
+      return res.json({ success: false, error: 'Wallet not found' });
+    }
+    
+    // Check if wallet has sufficient balance
+    if (wallet.balance < amount) {
+      return res.json({ success: false, error: 'Insufficient wallet balance' });
+    }
+    
+    // Deduct from wallet
+    wallet.balance -= amount;
+    wallet.lastTransaction = new Date();
+    await wallet.save();
+    
+    // Create debit transaction
+    const transaction = new Transaction({
+      ownerId: ownerId,
+      type: 'debit',
+      amount: amount,
+      description: 'Withdrawal approved by admin',
+      balanceAfter: wallet.balance
+    });
+    await transaction.save();
+    
+    // Update withdrawal status
+    withdrawal.status = 'completed';
+    withdrawal.processedDate = new Date();
+    withdrawal.adminNotes = adminNotes || 'Approved by admin';
+    await withdrawal.save();
+    
+    res.json({
+      success: true,
+      message: 'Withdrawal approved and amount deducted from wallet',
+      newBalance: wallet.balance
+    });
+  } catch (err) {
+    console.error("Approve withdrawal error:", err);
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// Reject withdrawal (Admin)
+router.post("/admin/reject-withdrawal/:withdrawalId", async (req, res) => {
+  try {
+    const { adminNotes } = req.body;
+    
+    const withdrawal = await Withdrawal.findById(req.params.withdrawalId);
+    if (!withdrawal) {
+      return res.json({ success: false, error: 'Withdrawal not found' });
+    }
+    
+    withdrawal.status = 'rejected';
+    withdrawal.processedDate = new Date();
+    withdrawal.adminNotes = adminNotes || 'Rejected by admin';
+    await withdrawal.save();
+    
+    res.json({
+      success: true,
+      message: 'Withdrawal rejected'
+    });
+  } catch (err) {
+    console.error("Reject withdrawal error:", err);
+    res.json({ success: false, error: err.message });
+  }
+});
