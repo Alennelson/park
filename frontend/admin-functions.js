@@ -129,15 +129,25 @@ async function rejectWithdrawal(withdrawalId) {
 // Load reports
 async function loadReports() {
   try {
+    console.log('Loading reports...');
     const response = await fetch(getApiUrl('/api/reports/admin/pending'));
     const data = await response.json();
     
+    console.log('Reports response:', data);
+    
     const list = document.getElementById('reportsList');
+    
+    if (!data.success) {
+      list.innerHTML = `<p style="color: #f44336; text-align: center; padding: 20px;">Error: ${data.error || 'Failed to load reports'}</p>`;
+      return;
+    }
     
     if (!data.reports || data.reports.length === 0) {
       list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No pending reports</p>';
       return;
     }
+    
+    console.log(`Displaying ${data.reports.length} reports`);
     
     list.innerHTML = `
       <table>
@@ -153,31 +163,38 @@ async function loadReports() {
           </tr>
         </thead>
         <tbody>
-          ${data.reports.map(r => `
+          ${data.reports.map(r => {
+            const providerName = r.providerId?.name || 'Unknown Provider';
+            const providerEmail = r.providerId?.email || '';
+            const providerId = r.providerId?._id || r.providerId;
+            const parkingNotes = r.parkingId?.notes || 'N/A';
+            
+            return `
             <tr>
               <td>
                 <b>${r.reporterName}</b><br>
                 <small>${r.reporterEmail}</small>
               </td>
               <td>
-                <b>${r.providerId?.name || 'Unknown'}</b><br>
-                <small>${r.providerId?.email || ''}</small>
+                <b>${providerName}</b><br>
+                <small>${providerEmail}</small>
               </td>
-              <td><small>${r.parkingId?.notes || 'N/A'}</small></td>
+              <td><small>${parkingNotes}</small></td>
               <td>${'⭐'.repeat(r.rating)}</td>
               <td><small>${r.reasons.join(', ')}</small></td>
               <td>${new Date(r.createdAt).toLocaleDateString()}</td>
               <td>
                 <button class="btn btn-view" onclick="viewReport('${r._id}')">👁️ View</button>
-                <button class="btn btn-delete" onclick="deleteProvider('${r.providerId._id}', '${r.providerId.name}')">🗑️ Delete Provider</button>
+                ${providerId ? `<button class="btn btn-delete" onclick="deleteProvider('${providerId}', '${providerName}')">🗑️ Delete Provider</button>` : ''}
               </td>
             </tr>
-          `).join('')}
+          `}).join('')}
         </tbody>
       </table>
     `;
   } catch (err) {
     console.error('Load reports error:', err);
+    document.getElementById('reportsList').innerHTML = '<p style="color: #f44336; text-align: center; padding: 20px;">Failed to load reports. Check console for errors.</p>';
   }
 }
 

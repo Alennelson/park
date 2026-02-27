@@ -109,32 +109,71 @@ router.get('/provider/:providerId', async (req, res) => {
 // Get all pending reports (for admin)
 router.get('/admin/pending', async (req, res) => {
   try {
+    console.log('Fetching pending reports...');
+    
     const reports = await Report.find({ status: 'pending' })
-      .sort({ createdAt: -1 })
-      .populate('parkingId', 'notes images')
-      .populate('providerId', 'name email')
-      .populate('reporterId', 'name email')
-      .populate('bookingId', 'createdAt');
+      .sort({ createdAt: -1 });
+
+    console.log(`Found ${reports.length} pending reports`);
+
+    // Manually fetch provider and parking details for each report
+    const ParkingOwner = require('../models/ParkingOwner');
+    
+    const reportsWithDetails = await Promise.all(reports.map(async (report) => {
+      const reportObj = report.toObject();
+      
+      // Fetch provider details
+      try {
+        const provider = await ParkingOwner.findById(report.providerId);
+        reportObj.providerId = provider ? {
+          _id: provider._id,
+          name: provider.name,
+          email: provider.email
+        } : null;
+      } catch (err) {
+        console.error('Error fetching provider:', err);
+        reportObj.providerId = null;
+      }
+      
+      // Fetch parking details
+      try {
+        const parking = await Parking.findById(report.parkingId);
+        reportObj.parkingId = parking ? {
+          _id: parking._id,
+          notes: parking.notes,
+          images: parking.images
+        } : null;
+      } catch (err) {
+        console.error('Error fetching parking:', err);
+        reportObj.parkingId = null;
+      }
+      
+      return reportObj;
+    }));
+
+    console.log('Reports with details:', JSON.stringify(reportsWithDetails, null, 2));
 
     // Group by parking space to show which ones have multiple reports
     const reportsByParking = {};
-    reports.forEach(report => {
-      const parkingId = report.parkingId._id.toString();
-      if (!reportsByParking[parkingId]) {
-        reportsByParking[parkingId] = {
-          parking: report.parkingId,
-          provider: report.providerId,
-          reports: []
-        };
+    reportsWithDetails.forEach(report => {
+      if (report.parkingId && report.parkingId._id) {
+        const parkingId = report.parkingId._id.toString();
+        if (!reportsByParking[parkingId]) {
+          reportsByParking[parkingId] = {
+            parking: report.parkingId,
+            provider: report.providerId,
+            reports: []
+          };
+        }
+        reportsByParking[parkingId].reports.push(report);
       }
-      reportsByParking[parkingId].reports.push(report);
     });
 
     res.json({
       success: true,
-      reports: reports,
+      reports: reportsWithDetails,
       reportsByParking: reportsByParking,
-      totalPending: reports.length
+      totalPending: reportsWithDetails.length
     });
   } catch (err) {
     console.error('Get pending reports error:', err);
