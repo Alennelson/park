@@ -4,9 +4,11 @@ async function loadWithdrawals() {
     const response = await fetch(getApiUrl('/api/wallet/admin/pending-withdrawals'));
     const withdrawals = await response.json();
     
+    console.log('Withdrawals loaded:', withdrawals);
+    
     const list = document.getElementById('withdrawalsList');
     
-    if (withdrawals.length === 0) {
+    if (!withdrawals || withdrawals.length === 0) {
       list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No pending withdrawals</p>';
       return;
     }
@@ -24,35 +26,42 @@ async function loadWithdrawals() {
           </tr>
         </thead>
         <tbody>
-          ${withdrawals.map(w => `
+          ${withdrawals.map(w => {
+            const ownerName = w.ownerId?.name || 'Unknown';
+            const ownerEmail = w.ownerId?.email || '';
+            const ownerId = w.ownerId?._id || w.ownerId;
+            
+            return `
             <tr>
               <td>
-                <b>${w.ownerId?.name || 'Unknown'}</b><br>
-                <small>${w.ownerId?.email || ''}</small>
+                <b>${ownerName}</b><br>
+                <small>${ownerEmail}</small>
               </td>
               <td><b>₹${w.amount}</b></td>
               <td>
                 <small>
                   <b>Acc:</b> ${w.accountNumber}<br>
                   <b>IFSC:</b> ${w.ifscCode}<br>
-                  ${w.upiId ? `<b>UPI:</b> ${w.upiId}` : ''}
+                  ${w.upiId ? `<b>UPI:</b> ${w.upiId}<br>` : ''}
+                  ${w.branch ? `<b>Branch:</b> ${w.branch}` : ''}
                 </small>
               </td>
               <td>${new Date(w.requestDate || w.createdAt).toLocaleDateString()}</td>
               <td><span class="status-badge status-${w.status}">${w.status}</span></td>
               <td>
                 ${w.status === 'pending' ? `
-                  <button class="btn btn-approve" onclick="approveWithdrawal('${w._id}', '${w.ownerId._id}', ${w.amount})">✓ Approve</button>
+                  <button class="btn btn-approve" onclick="approveWithdrawal('${w._id}', '${ownerId}', ${w.amount})">✓ Approve</button>
                   <button class="btn btn-reject" onclick="rejectWithdrawal('${w._id}')">✗ Reject</button>
                 ` : '-'}
               </td>
             </tr>
-          `).join('')}
+          `}).join('')}
         </tbody>
       </table>
     `;
   } catch (err) {
     console.error('Load withdrawals error:', err);
+    document.getElementById('withdrawalsList').innerHTML = '<p style="color: #f44336; text-align: center;">Failed to load withdrawals. Check console for errors.</p>';
   }
 }
 
@@ -303,31 +312,111 @@ async function viewTicket(ticketId) {
       return;
     }
     
-    let details = `
-🎫 Ticket #${ticket._id.substring(0, 8)}
-
-User: ${ticket.userName} (${ticket.userEmail})
-Type: ${ticket.category}
-Priority: ${ticket.priority}
-Subject: ${ticket.subject}
-
-Description:
-${ticket.description}
-
-${ticket.bookingId ? `Booking ID: ${ticket.bookingId}` : ''}
-${ticket.attachments && ticket.attachments.length > 0 ? `\nAttachments: ${ticket.attachments.length} images` : ''}
-
-Date: ${new Date(ticket.createdAt).toLocaleString()}
+    // Create a modal to show ticket details with images
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      overflow-y: auto;
+      padding: 20px;
     `;
     
-    alert(details);
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 800px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    `;
+    
+    let imagesHtml = '';
+    if (ticket.attachments && ticket.attachments.length > 0) {
+      imagesHtml = `
+        <div style="margin: 20px 0;">
+          <h4 style="color: #f44336; margin-bottom: 10px;">📷 Attached Images (${ticket.attachments.length})</h4>
+          <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Click images to view full size</p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">
+            ${ticket.attachments.map(img => `
+              <img 
+                src="${getApiUrl('/' + img)}" 
+                onclick="window.open('${getApiUrl('/' + img)}', '_blank')"
+                style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid #ddd;"
+                onerror="this.style.display='none'"
+                title="Click to view full size">
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    modalContent.innerHTML = `
+      <h2 style="color: #333; margin-bottom: 20px;">🎫 Ticket Details</h2>
+      
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <p><b>Ticket ID:</b> ${ticket._id.substring(0, 8)}</p>
+        <p><b>User:</b> ${ticket.userName} (${ticket.userEmail})</p>
+        <p><b>Type:</b> ${ticket.category === 'complaint' ? '🚨 Complaint' : '💬 Enquiry'}</p>
+        <p><b>Priority:</b> <span style="color: ${ticket.priority === 'high' ? '#f44336' : '#ff9800'}">${ticket.priority}</span></p>
+        <p><b>Date:</b> ${new Date(ticket.createdAt).toLocaleString()}</p>
+        ${ticket.bookingId ? `<p><b>Booking ID:</b> ${ticket.bookingId}</p>` : ''}
+      </div>
+      
+      <div style="margin: 15px 0;">
+        <h4 style="color: #333;">Subject:</h4>
+        <p style="font-size: 16px; font-weight: bold;">${ticket.subject}</p>
+      </div>
+      
+      <div style="margin: 15px 0;">
+        <h4 style="color: #333;">Description:</h4>
+        <p style="line-height: 1.6; white-space: pre-wrap;">${ticket.description}</p>
+      </div>
+      
+      ${imagesHtml}
+      
+      ${ticket.adminResponse ? `
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 4px solid #2196F3; margin: 15px 0;">
+          <h4 style="color: #1976d2;">Admin Response:</h4>
+          <p style="line-height: 1.6;">${ticket.adminResponse}</p>
+          ${ticket.resolvedAt ? `<small style="color: #666;">Resolved: ${new Date(ticket.resolvedAt).toLocaleString()}</small>` : ''}
+        </div>
+      ` : ''}
+      
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn btn-view" onclick="this.closest('.modal-wrapper').remove()">Close</button>
+      </div>
+    `;
+    
+    modal.className = 'modal-wrapper';
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    // Close on background click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
     
     // If it's a complaint with ASP insurance, ask about claim
-    if (ticket.category === 'complaint') {
-      handleInsuranceClaim(ticketId, ticket.userId);
+    if (ticket.category === 'complaint' && ticket.status !== 'resolved') {
+      setTimeout(() => {
+        handleInsuranceClaim(ticketId, ticket.userId);
+      }, 500);
     }
   } catch (err) {
     console.error('View ticket error:', err);
+    alert('Failed to load ticket details');
   }
 }
 

@@ -259,4 +259,38 @@ router.post("/admin/reject-withdrawal/:withdrawalId", async (req, res) => {
   }
 });
 
+/* GET ALL PENDING WITHDRAWALS (Admin) */
+router.get("/admin/pending-withdrawals", async (req, res) => {
+  try {
+    const withdrawals = await Withdrawal.find({ status: 'pending' })
+      .sort({ createdAt: -1 });
+    
+    // Manually fetch owner details for each withdrawal
+    const ParkingOwner = require('../models/ParkingOwner');
+    const withdrawalsWithOwner = await Promise.all(
+      withdrawals.map(async (w) => {
+        const owner = await ParkingOwner.findById(w.ownerId);
+        return {
+          ...w.toObject(),
+          ownerId: owner ? {
+            _id: owner._id,
+            name: owner.name,
+            email: owner.email
+          } : {
+            _id: w.ownerId,
+            name: 'Unknown',
+            email: ''
+          }
+        };
+      })
+    );
+    
+    console.log(`Found ${withdrawalsWithOwner.length} pending withdrawals`);
+    res.json(withdrawalsWithOwner);
+  } catch (err) {
+    console.error("Get pending withdrawals error:", err);
+    res.status(500).json({ error: "Server error", message: err.message });
+  }
+});
+
 module.exports = router;
