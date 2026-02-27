@@ -464,7 +464,7 @@
       <div class="logo-subtitle">A Space for Park</div>
     </div>
     <div class="nav-buttons">
-      <a href="#" onclick="startCarTransition(event)" class="nav-btn primary">Get Started</a>
+      <a href="login.html" class="nav-btn primary">Get Started</a>
     </div>
   </nav>
 
@@ -473,7 +473,7 @@
     <h1>Find Your Perfect Parking Space</h1>
     <p class="tagline">Discover available parking spots near you or earn money by renting out your unused space. Join thousands making parking hassle-free.</p>
     <div class="hero-buttons">
-      <a href="#" onclick="startCarTransition(event)" class="hero-btn primary">Get Started</a>
+      <a href="login.html" class="hero-btn primary">Get Started</a>
     </div>
   </section>
 
@@ -562,7 +562,7 @@
     <h2>Ready to Get Started?</h2>
     <p>Join thousands of users who are making parking easier every day</p>
     <div class="hero-buttons">
-      <a href="#" onclick="startCarTransition(event)" class="hero-btn primary">Get Started Now</a>
+      <a href="login.html" class="hero-btn primary">Get Started Now</a>
     </div>
   </section>
 
@@ -573,18 +573,7 @@
   </footer>
 
   <script>
-    function startCarTransition(event) {
-      event.preventDefault();
-      
-      // Show car transition
-      const transition = document.getElementById('carTransition');
-      transition.classList.add('active');
-      
-      // Redirect to login after animation
-      setTimeout(() => {
-        window.location.href = 'login.html';
-      }, 2000);
-    }
+    // No additional scripts needed
   </script>
 </body>
 </html>
