@@ -114,7 +114,7 @@ router.get('/admin/pending', async (req, res) => {
     const reports = await Report.find({ status: 'pending' })
       .sort({ createdAt: -1 });
 
-    console.log(`Found ${reports.length} pending reports`);
+    console.log(`Found ${reports.length} pending reports (raw)`);
 
     // Manually fetch provider and parking details for each report
     const ParkingOwner = require('../models/ParkingOwner');
@@ -122,14 +122,25 @@ router.get('/admin/pending', async (req, res) => {
     const reportsWithDetails = await Promise.all(reports.map(async (report) => {
       const reportObj = report.toObject();
       
+      console.log(`Processing report ${reportObj._id}:`, {
+        providerId: reportObj.providerId,
+        parkingId: reportObj.parkingId
+      });
+      
       // Fetch provider details
       try {
         const provider = await ParkingOwner.findById(report.providerId);
-        reportObj.providerId = provider ? {
-          _id: provider._id,
-          name: provider.name,
-          email: provider.email
-        } : null;
+        if (provider) {
+          reportObj.providerId = {
+            _id: provider._id,
+            name: provider.name,
+            email: provider.email
+          };
+          console.log(`Provider found: ${provider.name}`);
+        } else {
+          console.log(`Provider not found for ID: ${report.providerId}`);
+          reportObj.providerId = null;
+        }
       } catch (err) {
         console.error('Error fetching provider:', err);
         reportObj.providerId = null;
@@ -138,11 +149,17 @@ router.get('/admin/pending', async (req, res) => {
       // Fetch parking details
       try {
         const parking = await Parking.findById(report.parkingId);
-        reportObj.parkingId = parking ? {
-          _id: parking._id,
-          notes: parking.notes,
-          images: parking.images
-        } : null;
+        if (parking) {
+          reportObj.parkingId = {
+            _id: parking._id,
+            notes: parking.notes,
+            images: parking.images
+          };
+          console.log(`Parking found: ${parking.notes}`);
+        } else {
+          console.log(`Parking not found for ID: ${report.parkingId}`);
+          reportObj.parkingId = null;
+        }
       } catch (err) {
         console.error('Error fetching parking:', err);
         reportObj.parkingId = null;
@@ -151,7 +168,7 @@ router.get('/admin/pending', async (req, res) => {
       return reportObj;
     }));
 
-    console.log('Reports with details:', JSON.stringify(reportsWithDetails, null, 2));
+    console.log(`Processed ${reportsWithDetails.length} reports with details`);
 
     // Group by parking space to show which ones have multiple reports
     const reportsByParking = {};

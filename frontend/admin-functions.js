@@ -131,17 +131,23 @@ async function loadReports() {
   try {
     console.log('Loading reports...');
     const response = await fetch(getApiUrl('/api/reports/admin/pending'));
-    const data = await response.json();
     
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
     console.log('Reports response:', data);
     
     const list = document.getElementById('reportsList');
     
-    if (!data.success) {
+    // Check if response has error
+    if (data.success === false) {
       list.innerHTML = `<p style="color: #f44336; text-align: center; padding: 20px;">Error: ${data.error || 'Failed to load reports'}</p>`;
       return;
     }
     
+    // Check if reports array exists and has items
     if (!data.reports || data.reports.length === 0) {
       list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No pending reports</p>';
       return;
@@ -149,6 +155,7 @@ async function loadReports() {
     
     console.log(`Displaying ${data.reports.length} reports`);
     
+    // Build table HTML
     list.innerHTML = `
       <table>
         <thead>
@@ -164,28 +171,39 @@ async function loadReports() {
         </thead>
         <tbody>
           ${data.reports.map(r => {
+            console.log('Processing report:', r);
+            
+            // Safe property access with fallbacks
+            const reporterName = r.reporterName || 'Unknown';
+            const reporterEmail = r.reporterEmail || '';
+            
             const providerName = r.providerId?.name || 'Unknown Provider';
             const providerEmail = r.providerId?.email || '';
-            const providerId = r.providerId?._id || r.providerId;
+            const providerId = r.providerId?._id || r.providerId || '';
+            
             const parkingNotes = r.parkingId?.notes || 'N/A';
+            
+            const rating = r.rating || 1;
+            const reasons = Array.isArray(r.reasons) ? r.reasons.join(', ') : 'No reasons';
+            const createdAt = r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Unknown';
             
             return `
             <tr>
               <td>
-                <b>${r.reporterName}</b><br>
-                <small>${r.reporterEmail}</small>
+                <b>${reporterName}</b><br>
+                <small>${reporterEmail}</small>
               </td>
               <td>
                 <b>${providerName}</b><br>
                 <small>${providerEmail}</small>
               </td>
               <td><small>${parkingNotes}</small></td>
-              <td>${'⭐'.repeat(r.rating)}</td>
-              <td><small>${r.reasons.join(', ')}</small></td>
-              <td>${new Date(r.createdAt).toLocaleDateString()}</td>
+              <td>${'⭐'.repeat(rating)}</td>
+              <td><small>${reasons}</small></td>
+              <td>${createdAt}</td>
               <td>
                 <button class="btn btn-view" onclick="viewReport('${r._id}')">👁️ View</button>
-                ${providerId ? `<button class="btn btn-delete" onclick="deleteProvider('${providerId}', '${providerName}')">🗑️ Delete Provider</button>` : ''}
+                ${providerId ? `<button class="btn btn-delete" onclick="deleteProvider('${providerId}', '${providerName.replace(/'/g, "\\'")}')">🗑️ Delete Provider</button>` : '<span style="color: #999;">No provider ID</span>'}
               </td>
             </tr>
           `}).join('')}
@@ -194,15 +212,24 @@ async function loadReports() {
     `;
   } catch (err) {
     console.error('Load reports error:', err);
-    document.getElementById('reportsList').innerHTML = '<p style="color: #f44336; text-align: center; padding: 20px;">Failed to load reports. Check console for errors.</p>';
+    document.getElementById('reportsList').innerHTML = `<p style="color: #f44336; text-align: center; padding: 20px;">Failed to load reports: ${err.message}<br><small>Check console for details</small></p>`;
   }
 }
 
 // View report details
 async function viewReport(reportId) {
   try {
+    console.log('Viewing report:', reportId);
     const response = await fetch(getApiUrl(`/api/reports/admin/pending`));
     const data = await response.json();
+    
+    console.log('All reports:', data);
+    
+    if (!data.success || !data.reports) {
+      alert('Failed to load report details');
+      return;
+    }
+    
     const report = data.reports.find(r => r._id === reportId);
     
     if (!report) {
@@ -210,25 +237,40 @@ async function viewReport(reportId) {
       return;
     }
     
-    const details = `
+    console.log('Found report:', report);
+    
+    // Safe property access
+    const reporterName = report.reporterName || 'Unknown';
+    const reporterEmail = report.reporterEmail || '';
+    const providerName = report.providerId?.name || 'Unknown Provider';
+    const providerEmail = report.providerId?.email || '';
+    const parkingNotes = report.parkingId?.notes || 'N/A';
+    const rating = report.rating || 1;
+    const reasons = Array.isArray(report.reasons) ? report.reasons.join(', ') : 'No reasons';
+    const details = report.details || 'No additional details';
+    const reviewComment = report.reviewComment || 'No comment';
+    const createdAt = report.createdAt ? new Date(report.createdAt).toLocaleString() : 'Unknown';
+    
+    const detailsText = `
 📋 Report Details
 
-Reporter: ${report.reporterName} (${report.reporterEmail})
-Provider: ${report.providerId?.name} (${report.providerId?.email})
-Parking: ${report.parkingId?.notes || 'N/A'}
+Reporter: ${reporterName} (${reporterEmail})
+Provider: ${providerName} (${providerEmail})
+Parking: ${parkingNotes}
 
-Rating: ${'⭐'.repeat(report.rating)}
-Reasons: ${report.reasons.join(', ')}
+Rating: ${'⭐'.repeat(rating)}
+Reasons: ${reasons}
 
-Details: ${report.details || 'No additional details'}
-Review Comment: ${report.reviewComment || 'No comment'}
+Details: ${details}
+Review Comment: ${reviewComment}
 
-Date: ${new Date(report.createdAt).toLocaleString()}
+Date: ${createdAt}
     `;
     
-    alert(details);
+    alert(detailsText);
   } catch (err) {
     console.error('View report error:', err);
+    alert('Failed to view report: ' + err.message);
   }
 }
 
