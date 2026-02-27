@@ -123,32 +123,48 @@ router.delete("/admin/delete/:providerId", async (req, res) => {
   try {
     const { reason } = req.body;
     
-    // Delete provider
-    const provider = await ParkingOwner.findByIdAndDelete(req.params.providerId);
+    // Try to delete from ParkingOwner first
+    let provider = await ParkingOwner.findByIdAndDelete(req.params.providerId);
+    let providerType = 'ParkingOwner';
+    
+    // If not found in ParkingOwner, try User collection
     if (!provider) {
-      return res.json({ success: false, error: 'Provider not found' });
+      const User = require('../models/user');
+      provider = await User.findByIdAndDelete(req.params.providerId);
+      providerType = 'User';
     }
+    
+    if (!provider) {
+      return res.json({ success: false, error: 'Provider not found in any collection' });
+    }
+    
+    console.log(`Provider found in ${providerType} collection: ${provider.name} (${provider.email})`);
     
     // Delete all parking spaces owned by this provider
     const Parking = require('../models/Parking');
-    await Parking.deleteMany({ ownerId: req.params.providerId });
+    const deletedParkings = await Parking.deleteMany({ ownerId: req.params.providerId });
+    console.log(`Deleted ${deletedParkings.deletedCount} parking spaces`);
     
     // Cancel active bookings
     const Booking = require('../models/Booking');
-    await Booking.updateMany(
+    const updatedBookings = await Booking.updateMany(
       { ownerId: req.params.providerId, status: { $in: ['pending', 'confirmed', 'active'] } },
       { status: 'cancelled', notes: reason || 'Provider account deleted by admin' }
     );
+    console.log(`Cancelled ${updatedBookings.modifiedCount} active bookings`);
     
-    console.log(`Provider ${provider.name} (${provider.email}) deleted by admin. Reason: ${reason}`);
+    console.log(`✅ Provider ${provider.name} (${provider.email}) deleted by admin. Reason: ${reason}`);
     
     res.json({
       success: true,
       message: 'Provider account and all associated data deleted',
       deletedProvider: {
         name: provider.name,
-        email: provider.email
-      }
+        email: provider.email,
+        collection: providerType
+      },
+      deletedParkingSpaces: deletedParkings.deletedCount,
+      cancelledBookings: updatedBookings.modifiedCount
     });
   } catch (err) {
     console.error("Delete provider error:", err);

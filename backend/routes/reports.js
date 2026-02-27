@@ -118,6 +118,7 @@ router.get('/admin/pending', async (req, res) => {
 
     // Manually fetch provider and parking details for each report
     const ParkingOwner = require('../models/ParkingOwner');
+    const User = require('../models/user');
     
     const reportsWithDetails = await Promise.all(reports.map(async (report) => {
       const reportObj = report.toObject();
@@ -127,35 +128,22 @@ router.get('/admin/pending', async (req, res) => {
         parkingId: reportObj.parkingId
       });
       
-      // Fetch provider details
-      try {
-        const provider = await ParkingOwner.findById(report.providerId);
-        if (provider) {
-          reportObj.providerId = {
-            _id: provider._id,
-            name: provider.name,
-            email: provider.email
-          };
-          console.log(`Provider found: ${provider.name}`);
-        } else {
-          console.log(`Provider not found for ID: ${report.providerId}`);
-          reportObj.providerId = null;
-        }
-      } catch (err) {
-        console.error('Error fetching provider:', err);
-        reportObj.providerId = null;
-      }
-      
-      // Fetch parking details
+      // First, fetch parking details to get ownerId
+      let parkingOwnerId = reportObj.providerId;
       try {
         const parking = await Parking.findById(report.parkingId);
         if (parking) {
           reportObj.parkingId = {
             _id: parking._id,
             notes: parking.notes,
-            images: parking.images
+            images: parking.images,
+            ownerId: parking.ownerId
           };
-          console.log(`Parking found: ${parking.notes}`);
+          // Use ownerId from parking if available
+          if (parking.ownerId) {
+            parkingOwnerId = parking.ownerId;
+          }
+          console.log(`Parking found: ${parking.notes}, ownerId: ${parking.ownerId}`);
         } else {
           console.log(`Parking not found for ID: ${report.parkingId}`);
           reportObj.parkingId = null;
@@ -163,6 +151,34 @@ router.get('/admin/pending', async (req, res) => {
       } catch (err) {
         console.error('Error fetching parking:', err);
         reportObj.parkingId = null;
+      }
+      
+      // Fetch provider details - try ParkingOwner first, then User
+      try {
+        console.log(`Looking for provider with ID: ${parkingOwnerId}`);
+        let provider = await ParkingOwner.findById(parkingOwnerId);
+        
+        // If not found in ParkingOwner, try User collection
+        if (!provider) {
+          console.log(`Provider not found in ParkingOwner, trying User collection...`);
+          provider = await User.findById(parkingOwnerId);
+        }
+        
+        if (provider) {
+          reportObj.providerId = {
+            _id: provider._id,
+            name: provider.name,
+            email: provider.email
+          };
+          console.log(`✅ Provider found: ${provider.name} (${provider.email})`);
+        } else {
+          console.log(`❌ Provider not found in any collection for ID: ${parkingOwnerId}`);
+          // Keep the ID even if provider not found
+          reportObj.providerId = parkingOwnerId;
+        }
+      } catch (err) {
+        console.error('Error fetching provider:', err);
+        reportObj.providerId = parkingOwnerId;
       }
       
       return reportObj;
