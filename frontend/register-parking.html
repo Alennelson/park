@@ -53,9 +53,117 @@
       font-weight: bold;
       cursor: pointer;
     }
+
+    /* LOADING OVERLAY */
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .loading-box {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+      animation: slideIn 0.3s ease-out;
+      max-width: 300px;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .file-icon {
+      font-size: 60px;
+      margin-bottom: 15px;
+      animation: bounce 1s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #f0f0f0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #FFD400, #FFC800);
+      border-radius: 10px;
+      animation: progress 2s ease-in-out;
+    }
+
+    @keyframes progress {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+
+    .loading-text {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .loading-subtext {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .checkmark {
+      display: none;
+      font-size: 60px;
+      color: #4CAF50;
+      animation: scaleIn 0.3s ease-out;
+    }
+
+    @keyframes scaleIn {
+      from {
+        transform: scale(0);
+      }
+      to {
+        transform: scale(1);
+      }
+    }
   </style>
 </head>
 <body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="file-icon" id="fileIcon">📁</div>
+    <div class="checkmark" id="checkmark">✅</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="loading-text" id="loadingText">Saving Parking Space</div>
+    <div class="loading-subtext" id="loadingSubtext">Uploading images and data to database...</div>
+  </div>
+</div>
 
 <div class="phone">
 
@@ -156,6 +264,36 @@ function togglePriceInput(vehicleType) {
 }
 
 /* REGISTER PARKING */
+/* SHOW LOADING */
+function showLoading() {
+  document.getElementById('loadingOverlay').style.display = 'flex';
+  document.getElementById('fileIcon').style.display = 'block';
+  document.getElementById('checkmark').style.display = 'none';
+  document.getElementById('loadingText').textContent = 'Saving Parking Space';
+  document.getElementById('loadingSubtext').textContent = 'Uploading images and data to database...';
+  
+  // Restart progress animation
+  const progressFill = document.getElementById('progressFill');
+  progressFill.style.animation = 'none';
+  setTimeout(() => {
+    progressFill.style.animation = 'progress 2s ease-in-out';
+  }, 10);
+}
+
+/* SHOW SUCCESS */
+function showSuccess() {
+  document.getElementById('fileIcon').style.display = 'none';
+  document.getElementById('checkmark').style.display = 'block';
+  document.getElementById('loadingText').textContent = 'Saved Successfully!';
+  document.getElementById('loadingSubtext').textContent = 'Your parking space has been registered';
+}
+
+/* HIDE LOADING */
+function hideLoading() {
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+/* REGISTER PARKING */
 function registerParking() {
   const notes = document.getElementById("notes").value;
   const files = document.getElementById("images").files;
@@ -245,6 +383,9 @@ function registerParking() {
     return;
   }
 
+  // Show loading animation
+  showLoading();
+
   const formData = new FormData();
   formData.append("notes", notes);
   formData.append("ownerId", ownerId);
@@ -265,14 +406,26 @@ function registerParking() {
     .then(res => res.json())
     .then(data => {
       if (!data.success) {
-        alert("Failed to register parking");
+        hideLoading();
+        alert("❌ Failed to register parking");
         return;
       }
 
-      alert("Parking registered successfully!");
-      window.location.href = "dashboard.html";
+      // Show success state
+      showSuccess();
+      
+      // Wait 1.5 seconds to show success, then redirect
+      setTimeout(() => {
+        hideLoading();
+        alert("✅ Parking registered successfully!");
+        window.location.href = "dashboard.html";
+      }, 1500);
     })
-    .catch(() => alert("Server error"));
+    .catch((err) => {
+      console.error('Registration error:', err);
+      hideLoading();
+      alert("❌ Server error. Please try again.");
+    });
 }
 </script>
 
