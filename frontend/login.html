@@ -426,65 +426,7 @@
       }
     }
 
-    /* Birds */
-    .birds-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-    }
 
-    .bird {
-      position: absolute;
-      font-size: 1.5em;
-      animation: birdFly 15s linear infinite;
-    }
-
-    .bird1 {
-      top: 50px;
-      animation-duration: 12s;
-      animation-delay: 0s;
-    }
-
-    .bird2 {
-      top: 80px;
-      animation-duration: 15s;
-      animation-delay: 2s;
-    }
-
-    .bird3 {
-      top: 120px;
-      animation-duration: 18s;
-      animation-delay: 4s;
-    }
-
-    .bird4 {
-      top: 60px;
-      animation-duration: 14s;
-      animation-delay: 6s;
-    }
-
-    @keyframes birdFly {
-      0% {
-        left: -50px;
-        transform: translateY(0);
-      }
-      25% {
-        transform: translateY(-20px);
-      }
-      50% {
-        transform: translateY(0);
-      }
-      75% {
-        transform: translateY(-15px);
-      }
-      100% {
-        left: 110%;
-        transform: translateY(0);
-      }
-    }
 
     /* Trees - BIGGER SIZE */
     .trees-container {
@@ -536,10 +478,6 @@
         top: 20px;
         right: 30px;
       }
-
-      .bird {
-        font-size: 1.2em;
-      }
     }
   </style>
 </head>
@@ -547,19 +485,11 @@
 
 <!-- Loading Animation Overlay -->
 <div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-text">🔍 Searching for parking...</div>
+  <div class="loading-text">⚙️ Setting up your dashboard...</div>
   
   <div class="scene-container">
     <!-- Sun -->
     <div class="sun"></div>
-
-    <!-- Flying Birds -->
-    <div class="birds-container">
-      <div class="bird bird1">🦅</div>
-      <div class="bird bird2">🦅</div>
-      <div class="bird bird3">🦅</div>
-      <div class="bird bird4">🦅</div>
-    </div>
 
     <!-- Sky with clouds -->
     <div class="sky">
