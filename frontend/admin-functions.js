@@ -161,7 +161,7 @@ async function loadReports() {
         <thead>
           <tr>
             <th>Reporter</th>
-            <th>Provider</th>
+            <th>Provider Account</th>
             <th>Parking Space</th>
             <th>Rating</th>
             <th>Reasons</th>
@@ -177,9 +177,24 @@ async function loadReports() {
             const reporterName = r.reporterName || 'Unknown';
             const reporterEmail = r.reporterEmail || '';
             
-            const providerName = r.providerId?.name || 'Unknown Provider';
-            const providerEmail = r.providerId?.email || '';
-            const providerId = r.providerId?._id || r.providerId || '';
+            // Try to get provider info from populated data or use the ID directly
+            let providerName = 'Unknown Provider';
+            let providerEmail = '';
+            let providerId = '';
+            
+            if (r.providerId) {
+              if (typeof r.providerId === 'object' && r.providerId._id) {
+                // Provider data is populated
+                providerName = r.providerId.name || 'Unknown Provider';
+                providerEmail = r.providerId.email || '';
+                providerId = r.providerId._id;
+              } else if (typeof r.providerId === 'string') {
+                // Only ID is available (provider might be deleted)
+                providerId = r.providerId;
+                providerName = '⚠️ Provider Account';
+                providerEmail = 'ID: ' + providerId.substring(0, 8) + '...';
+              }
+            }
             
             const parkingNotes = r.parkingId?.notes || 'N/A';
             
@@ -191,19 +206,30 @@ async function loadReports() {
             <tr>
               <td>
                 <b>${reporterName}</b><br>
-                <small>${reporterEmail}</small>
+                <small style="color: #666;">${reporterEmail}</small>
               </td>
               <td>
-                <b>${providerName}</b><br>
-                <small>${providerEmail}</small>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <div>
+                    <b>${providerName}</b><br>
+                    <small style="color: #666;">${providerEmail}</small>
+                  </div>
+                  ${providerId ? `
+                    <button 
+                      class="btn btn-delete" 
+                      style="font-size: 12px; padding: 5px 10px; width: 100%;"
+                      onclick="deleteProviderFromReport('${providerId}', '${providerName.replace(/'/g, "\\'")}', '${r._id}')">
+                      🗑️ Delete Provider Account
+                    </button>
+                  ` : '<small style="color: #999;">No provider ID available</small>'}
+                </div>
               </td>
               <td><small>${parkingNotes}</small></td>
               <td>${'⭐'.repeat(rating)}</td>
               <td><small>${reasons}</small></td>
-              <td>${createdAt}</td>
+              <td><small>${createdAt}</small></td>
               <td>
-                <button class="btn btn-view" onclick="viewReport('${r._id}')">👁️ View</button>
-                ${providerId ? `<button class="btn btn-delete" onclick="deleteProvider('${providerId}', '${providerName.replace(/'/g, "\\'")}')">🗑️ Delete Provider</button>` : '<span style="color: #999;">No provider ID</span>'}
+                <button class="btn btn-view" onclick="viewReport('${r._id}')">👁️ View Details</button>
               </td>
             </tr>
           `}).join('')}
@@ -271,6 +297,74 @@ Date: ${createdAt}
   } catch (err) {
     console.error('View report error:', err);
     alert('Failed to view report: ' + err.message);
+  }
+}
+
+// Delete provider account from report
+async function deleteProviderFromReport(providerId, providerName, reportId) {
+  if (!providerId) {
+    alert('❌ Cannot delete: Provider ID not available');
+    return;
+  }
+  
+  if (!confirm(`⚠️ DELETE PROVIDER ACCOUNT?\n\nProvider: ${providerName}\nProvider ID: ${providerId}\n\nThis will:\n✓ Delete the provider account permanently\n✓ Remove all their parking spaces\n✓ Cancel all active bookings\n✓ Mark this report as resolved\n\nThis action CANNOT be undone!`)) {
+    return;
+  }
+  
+  const confirmText = prompt('Type "DELETE" in capital letters to confirm:');
+  if (confirmText !== 'DELETE') {
+    alert('❌ Deletion cancelled - confirmation text did not match');
+    return;
+  }
+  
+  try {
+    console.log(`Deleting provider ${providerId} from report ${reportId}`);
+    
+    // Delete the provider account
+    const deleteResponse = await fetch(getApiUrl(`/api/owner/admin/delete/${providerId}`), {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reason: `Account terminated by admin due to user report (Report ID: ${reportId})`
+      })
+    });
+    
+    const deleteData = await deleteResponse.json();
+    
+    if (!deleteData.success) {
+      alert('❌ Error deleting provider: ' + (deleteData.error || 'Unknown error'));
+      return;
+    }
+    
+    console.log('Provider deleted successfully, now updating report status');
+    
+    // Mark the report as resolved
+    const reportResponse = await fetch(getApiUrl(`/api/reports/admin/update/${reportId}`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'resolved',
+        actionTaken: 'removal',
+        adminNotes: `Provider account deleted by admin on ${new Date().toLocaleString()}`,
+        resolvedBy: 'Admin'
+      })
+    });
+    
+    const reportData = await reportResponse.json();
+    
+    if (reportData.success) {
+      alert('✅ SUCCESS!\n\n✓ Provider account deleted\n✓ All parking spaces removed\n✓ Active bookings cancelled\n✓ Report marked as resolved');
+    } else {
+      alert('⚠️ Provider deleted but failed to update report status: ' + (reportData.error || 'Unknown error'));
+    }
+    
+    // Reload the reports and dashboard
+    loadReports();
+    loadDashboard();
+    
+  } catch (err) {
+    console.error('Delete provider from report error:', err);
+    alert('❌ Failed to delete provider: ' + err.message);
   }
 }
 
