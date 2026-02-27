@@ -402,19 +402,103 @@
       }
     }
 
-    /* Trees */
+    /* Sun */
+    .sun {
+      position: absolute;
+      top: 30px;
+      right: 50px;
+      width: 80px;
+      height: 80px;
+      background: radial-gradient(circle, #FFD700 0%, #FFA500 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+      animation: sunGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes sunGlow {
+      0%, 100% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 50px rgba(255, 215, 0, 1);
+        transform: scale(1.05);
+      }
+    }
+
+    /* Birds */
+    .birds-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .bird {
+      position: absolute;
+      font-size: 1.5em;
+      animation: birdFly 15s linear infinite;
+    }
+
+    .bird1 {
+      top: 50px;
+      animation-duration: 12s;
+      animation-delay: 0s;
+    }
+
+    .bird2 {
+      top: 80px;
+      animation-duration: 15s;
+      animation-delay: 2s;
+    }
+
+    .bird3 {
+      top: 120px;
+      animation-duration: 18s;
+      animation-delay: 4s;
+    }
+
+    .bird4 {
+      top: 60px;
+      animation-duration: 14s;
+      animation-delay: 6s;
+    }
+
+    @keyframes birdFly {
+      0% {
+        left: -50px;
+        transform: translateY(0);
+      }
+      25% {
+        transform: translateY(-20px);
+      }
+      50% {
+        transform: translateY(0);
+      }
+      75% {
+        transform: translateY(-15px);
+      }
+      100% {
+        left: 110%;
+        transform: translateY(0);
+      }
+    }
+
+    /* Trees - BIGGER SIZE */
     .trees-container {
       position: absolute;
       bottom: 100px;
       width: 200%;
       display: flex;
-      gap: 150px;
+      gap: 120px;
       animation: treesMove 6s linear infinite;
     }
 
     .tree {
-      font-size: 3em;
-      filter: brightness(0.8);
+      font-size: 5em; /* Increased from 3em to 5em */
+      filter: brightness(0.8) drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
     }
 
     @keyframes treesMove {
@@ -443,7 +527,18 @@
       }
 
       .tree {
-        font-size: 2em;
+        font-size: 3.5em; /* Bigger on mobile too */
+      }
+
+      .sun {
+        width: 60px;
+        height: 60px;
+        top: 20px;
+        right: 30px;
+      }
+
+      .bird {
+        font-size: 1.2em;
       }
     }
   </style>
@@ -455,6 +550,17 @@
   <div class="loading-text">🔍 Searching for parking...</div>
   
   <div class="scene-container">
+    <!-- Sun -->
+    <div class="sun"></div>
+
+    <!-- Flying Birds -->
+    <div class="birds-container">
+      <div class="bird bird1">🦅</div>
+      <div class="bird bird2">🦅</div>
+      <div class="bird bird3">🦅</div>
+      <div class="bird bird4">🦅</div>
+    </div>
+
     <!-- Sky with clouds -->
     <div class="sky">
       <div class="cloud cloud1">☁️</div>
@@ -536,12 +642,14 @@
       </div>
     </div>
 
-    <!-- Trees passing by -->
+    <!-- Trees passing by - BIGGER TREES -->
     <div class="trees-container">
       <div class="tree">🌲</div>
+      <div class="tree">🌳</div>
       <div class="tree">🌲</div>
+      <div class="tree">🌳</div>
       <div class="tree">🌲</div>
-      <div class="tree">🌲</div>
+      <div class="tree">🌳</div>
     </div>
   </div>
 </div>
