@@ -301,12 +301,16 @@
 
     .rating-card {
       background: white;
-      padding: 30px;
+      padding: 15px;
       border-radius: 20px;
       width: 90%;
       max-width: 320px;
+      max-height: 80vh;
+      overflow-y: auto;
       text-align: center;
       animation: popIn 0.3s ease;
+      display: flex;
+      flex-direction: column;
     }
 
     @keyframes popIn {
@@ -316,7 +320,7 @@
 
     .rating-card h3 {
       color: #333;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
 
     .stars {
@@ -355,15 +359,16 @@
 
     .rating-card button {
       width: 100%;
-      padding: 14px;
+      padding: 12px;
       background: #4CAF50;
       color: white;
       border: none;
       border-radius: 10px;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: bold;
       cursor: pointer;
-      margin-top: 10px;
+      margin-top: 8px;
+      flex-shrink: 0;
     }
 
     .rating-card button:hover {
@@ -381,13 +386,13 @@
 
     .report-btn {
       background: #ff4444 !important;
-      margin-top: 10px !important;
+      margin-top: 8px !important;
       display: none !important;
       width: 100% !important;
-      padding: 14px !important;
+      padding: 12px !important;
       border: none !important;
       border-radius: 10px !important;
-      font-size: 16px !important;
+      font-size: 15px !important;
       font-weight: bold !important;
       cursor: pointer !important;
       color: white !important;
@@ -403,8 +408,11 @@
 
     .report-reasons {
       text-align: left;
-      margin: 15px 0;
+      margin: 10px 0;
       display: none;
+      max-height: 35vh;
+      overflow-y: auto;
+      flex-shrink: 0;
     }
 
     .report-reasons.show {
@@ -413,12 +421,12 @@
 
     .report-reasons label {
       display: block;
-      padding: 10px;
-      margin: 5px 0;
+      padding: 8px;
+      margin: 4px 0;
       background: #f5f5f5;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .report-reasons input[type="checkbox"] {
@@ -431,7 +439,7 @@
       border: 2px solid #ddd;
       border-radius: 8px;
       margin-top: 10px;
-      font-size: 14px;
+      font-size: 13px;
       resize: none;
     }
 
@@ -610,11 +618,11 @@
         <span class="star" onclick="setRating(5)">⭐</span>
       </div>
       
-      <textarea id="reviewComment" placeholder="Share your experience (optional)" rows="3"></textarea>
+      <textarea id="reviewComment" placeholder="Share your experience (optional)" rows="2"></textarea>
       
       <!-- Report Section (shows for 1-2 stars) -->
       <div class="report-reasons" id="reportReasons">
-        <p style="font-weight: bold; color: #ff4444; margin-bottom: 10px;">🚨 Report Issues (Select all that apply):</p>
+        <p style="font-weight: bold; color: #ff4444; margin-bottom: 8px; font-size: 13px;">🚨 Report Issues (Select all that apply):</p>
         <label>
           <input type="checkbox" value="dirty" class="report-checkbox">
           Dirty or poorly maintained space
@@ -643,12 +651,14 @@
           <input type="checkbox" value="other" class="report-checkbox">
           Other issue
         </label>
-        <textarea id="reportDetails" placeholder="Additional details about the issue..." rows="3"></textarea>
+        <textarea id="reportDetails" placeholder="Additional details about the issue..." rows="2"></textarea>
       </div>
       
-      <button id="normalSubmitBtn" onclick="submitRating()">Submit Rating</button>
-      <button class="report-btn" id="reportBtn" onclick="submitWithReport()">🚨 Submit Rating & Report</button>
-      <button class="skip-btn" onclick="skipRating()">Skip</button>
+      <div style="padding-bottom: 10px;">
+        <button id="normalSubmitBtn" onclick="submitRating()">Submit Rating</button>
+        <button class="report-btn" id="reportBtn" onclick="submitWithReport()">🚨 Submit Rating & Report</button>
+        <button class="skip-btn" onclick="skipRating()">Skip</button>
+      </div>
     </div>
   </div>
 
@@ -1361,6 +1371,13 @@ function submitWithReport() {
   const userName = localStorage.getItem('name');
   const userEmail = localStorage.getItem('email');
 
+  console.log('Submitting report with data:', {
+    parkingId: currentBooking.parkingId || currentBooking.parking._id,
+    providerId: currentBooking.ownerId,
+    rating: selectedRating,
+    reasons: reasons
+  });
+
   // First submit the rating
   fetch(getApiUrl('/api/reviews/submit'), {
     method: 'POST',
@@ -1374,10 +1391,18 @@ function submitWithReport() {
       bookingId: currentBooking._id
     })
   })
-  .then(r => r.json())
+  .then(r => {
+    console.log('Rating response status:', r.status);
+    if (!r.ok) {
+      throw new Error('Rating submission failed with status: ' + r.status);
+    }
+    return r.json();
+  })
   .then(data => {
+    console.log('Rating response:', data);
     if (data.success) {
       // Now submit the report
+      console.log('Submitting report to:', getApiUrl('/api/reports/submit'));
       return fetch(getApiUrl('/api/reports/submit'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1398,8 +1423,15 @@ function submitWithReport() {
       throw new Error(data.error || 'Failed to submit rating');
     }
   })
-  .then(r => r.json())
+  .then(r => {
+    console.log('Report response status:', r.status);
+    if (!r.ok) {
+      throw new Error('Report submission failed with status: ' + r.status);
+    }
+    return r.json();
+  })
   .then(reportData => {
+    console.log('Report response:', reportData);
     if (reportData.success) {
       alert('✅ Thank you for your feedback!\n\nYour rating and report have been submitted. Our admin team will review this case.');
       document.getElementById('ratingPopup').classList.remove('active');
@@ -1411,7 +1443,7 @@ function submitWithReport() {
   })
   .catch(err => {
     console.error('Submit error:', err);
-    alert('Error: ' + err.message);
+    alert('Error: ' + err.message + '\n\nPlease make sure the backend server is running and try again.');
   });
 }
 
