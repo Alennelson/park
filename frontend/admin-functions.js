@@ -430,22 +430,34 @@ async function loadSupportTickets() {
           </tr>
         </thead>
         <tbody>
-          ${tickets.map(t => `
-            <tr>
+          ${tickets.map(t => {
+            // Check if user has ASP insurance
+            const insuranceBadge = t.hasInsurance ? 
+              `<span style="background: #4CAF50; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px;">🛡️ ASP PROTECTED</span>` : '';
+            
+            const priorityColor = t.priority === 'high' || t.priority === 'urgent' ? '#f44336' : 
+                                 t.priority === 'medium' ? '#ff9800' : '#999';
+            
+            return `
+            <tr style="${t.hasInsurance ? 'background: #e8f5e9;' : ''}">
               <td>
-                <b>${t.userName}</b><br>
+                <b>${t.userName}</b>${insuranceBadge}<br>
                 <small>${t.userEmail}</small>
               </td>
               <td>${t.category === 'complaint' ? '🚨 Complaint' : '💬 Enquiry'}</td>
               <td>${t.subject}</td>
-              <td><span class="status-badge status-${t.priority}">${t.priority}</span></td>
+              <td>
+                <span class="status-badge" style="background: ${priorityColor}; color: white;">
+                  ${t.priority.toUpperCase()}${t.hasInsurance ? ' ⚡' : ''}
+                </span>
+              </td>
               <td>${new Date(t.createdAt).toLocaleDateString()}</td>
               <td>
                 <button class="btn btn-view" onclick="viewTicket('${t._id}')">👁️ View</button>
                 <button class="btn btn-resolve" onclick="resolveTicket('${t._id}')">✓ Resolve</button>
               </td>
             </tr>
-          `).join('')}
+          `}).join('')}
         </tbody>
       </table>
     `;
@@ -493,6 +505,23 @@ async function viewTicket(ticketId) {
       overflow-y: auto;
     `;
     
+    // Insurance badge
+    let insuranceBadge = '';
+    if (ticket.hasInsurance) {
+      insuranceBadge = `
+        <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); padding: 15px; border-radius: 10px; margin: 15px 0; color: white; text-align: center;">
+          <h3 style="margin: 0; font-size: 18px;">🛡️ ASP INSURANCE PROTECTED</h3>
+          <p style="margin: 5px 0 0 0; font-size: 14px;">Tier: ${ticket.insuranceTier ? ticket.insuranceTier.toUpperCase() : 'N/A'} | Priority: HIGH ⚡</p>
+          ${ticket.insuranceClaimProcessed ? 
+            `<p style="margin: 5px 0 0 0; font-size: 14px; background: rgba(255,255,255,0.2); padding: 8px; border-radius: 5px;">
+              ✅ Insurance Claim Processed: ₹${ticket.insuranceClaimAmount}
+            </p>` : 
+            `<p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.9;">Eligible for insurance claim up to tier limit</p>`
+          }
+        </div>
+      `;
+    }
+    
     let imagesHtml = '';
     if (ticket.attachments && ticket.attachments.length > 0) {
       imagesHtml = `
@@ -516,11 +545,13 @@ async function viewTicket(ticketId) {
     modalContent.innerHTML = `
       <h2 style="color: #333; margin-bottom: 20px;">🎫 Ticket Details</h2>
       
+      ${insuranceBadge}
+      
       <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
         <p><b>Ticket ID:</b> ${ticket._id.substring(0, 8)}</p>
         <p><b>User:</b> ${ticket.userName} (${ticket.userEmail})</p>
         <p><b>Type:</b> ${ticket.category === 'complaint' ? '🚨 Complaint' : '💬 Enquiry'}</p>
-        <p><b>Priority:</b> <span style="color: ${ticket.priority === 'high' ? '#f44336' : '#ff9800'}">${ticket.priority}</span></p>
+        <p><b>Priority:</b> <span style="color: ${ticket.priority === 'high' ? '#f44336' : '#ff9800'}">${ticket.priority.toUpperCase()}</span></p>
         <p><b>Date:</b> ${new Date(ticket.createdAt).toLocaleString()}</p>
         ${ticket.bookingId ? `<p><b>Booking ID:</b> ${ticket.bookingId}</p>` : ''}
       </div>
@@ -561,8 +592,8 @@ async function viewTicket(ticketId) {
       }
     });
     
-    // If it's a complaint with ASP insurance, ask about claim
-    if (ticket.category === 'complaint' && ticket.status !== 'resolved') {
+    // If it's a complaint with ASP insurance and not yet processed, ask about claim
+    if (ticket.category === 'complaint' && ticket.hasInsurance && !ticket.insuranceClaimProcessed && ticket.status !== 'resolved') {
       setTimeout(() => {
         handleInsuranceClaim(ticketId, ticket.userId);
       }, 500);

@@ -359,21 +359,38 @@ router.post("/process-claim", async (req, res) => {
     wallet.lastTransaction = new Date();
     await wallet.save();
     
-    // Create transaction
+    // Create transaction with special message
     const transaction = new Transaction({
       ownerId: userId,
       type: 'credit',
       amount: claimAmount,
-      description: `Insurance claim: ${reason}`,
-      balanceAfter: wallet.balance
+      description: `💰 Insurance Claim Approved - ₹${claimAmount} credited for your complaint. With regards, ASP Official Protection Team 🛡️`,
+      balanceAfter: wallet.balance,
+      metadata: {
+        ticketId: ticketId,
+        insuranceTier: verification.tier,
+        claimReason: reason
+      }
     });
     await transaction.save();
     
+    // Update ticket to mark claim as processed
+    if (ticketId) {
+      const SupportTicket = require('../models/SupportTicket');
+      await SupportTicket.findByIdAndUpdate(ticketId, {
+        insuranceClaimProcessed: true,
+        insuranceClaimAmount: claimAmount
+      });
+    }
+    
+    console.log(`✅ Insurance claim processed: ₹${claimAmount} credited to user ${userId} for ticket ${ticketId}`);
+    
     res.json({
       success: true,
-      message: 'Insurance claim processed',
+      message: `Insurance claim approved! ₹${claimAmount} has been credited to your wallet. You can withdraw this amount anytime.`,
       claimAmount: claimAmount,
-      newBalance: wallet.balance
+      newBalance: wallet.balance,
+      transaction: transaction
     });
   } catch (err) {
     console.error("Process claim error:", err);

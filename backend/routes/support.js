@@ -42,6 +42,22 @@ router.post("/create", upload.array("images", 5), async (req, res) => {
       });
     }
     
+    // Check if user has ASP Insurance Protection
+    const Verification = require('../models/Verification');
+    const verification = await Verification.findOne({ userId, status: 'active' });
+    
+    let ticketPriority = priority || 'medium';
+    let hasInsurance = false;
+    let insuranceTier = null;
+    
+    if (verification) {
+      // User has ASP protection - set HIGH priority automatically
+      ticketPriority = 'high';
+      hasInsurance = true;
+      insuranceTier = verification.tier;
+      console.log(`🛡️ ASP Protection user detected: ${userName} (${insuranceTier.toUpperCase()} tier) - Setting HIGH priority`);
+    }
+    
     // Get uploaded image paths
     const attachments = req.files ? req.files.map(file => file.path) : [];
     
@@ -52,15 +68,17 @@ router.post("/create", upload.array("images", 5), async (req, res) => {
       category,
       subject,
       description,
-      priority: priority || 'medium',
+      priority: ticketPriority,
       bookingId,
       attachments,
-      status: 'open'
+      status: 'open',
+      hasInsurance: hasInsurance,
+      insuranceTier: insuranceTier
     });
     
     await ticket.save();
     
-    console.log(`Support ticket created: ${ticket._id} by ${userName} with ${attachments.length} images`);
+    console.log(`Support ticket created: ${ticket._id} by ${userName} with ${attachments.length} images${hasInsurance ? ' [ASP PROTECTED - HIGH PRIORITY]' : ''}`);
     res.json({ success: true, ticket });
   } catch (err) {
     console.error("Create ticket error:", err);

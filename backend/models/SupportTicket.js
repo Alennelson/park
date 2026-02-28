@@ -53,6 +53,23 @@ const supportTicketSchema = new mongoose.Schema({
   },
   resolvedBy: {
     type: String
+  },
+  hasInsurance: {
+    type: Boolean,
+    default: false
+  },
+  insuranceTier: {
+    type: String,
+    enum: ['basic', 'premium', null],
+    default: null
+  },
+  insuranceClaimProcessed: {
+    type: Boolean,
+    default: false
+  },
+  insuranceClaimAmount: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true
