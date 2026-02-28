@@ -44,7 +44,11 @@ router.post("/create", upload.array("images", 5), async (req, res) => {
     
     // Check if user has ASP Insurance Protection
     const Verification = require('../models/Verification');
-    const verification = await Verification.findOne({ userId, status: 'active' });
+    // Try both userId and ownerId to handle different field names
+    let verification = await Verification.findOne({ ownerId: userId, status: 'active' });
+    if (!verification) {
+      verification = await Verification.findOne({ userId: userId, status: 'active' });
+    }
     
     let ticketPriority = priority || 'medium';
     let hasInsurance = false;
@@ -56,6 +60,8 @@ router.post("/create", upload.array("images", 5), async (req, res) => {
       hasInsurance = true;
       insuranceTier = verification.tier;
       console.log(`🛡️ ASP Protection user detected: ${userName} (${insuranceTier.toUpperCase()} tier) - Setting HIGH priority`);
+    } else {
+      console.log(`No ASP insurance found for user ${userId}`);
     }
     
     // Get uploaded image paths
@@ -194,7 +200,48 @@ router.get("/admin/open", async (req, res) => {
     const tickets = await SupportTicket.find({ status: { $in: ['open', 'in_progress'] } })
       .sort({ priority: -1, createdAt: -1 });
     
-    res.json(tickets);
+    // Enrich tickets with current insurance status
+    const Verification = require('../models/Verification');
+    
+    const enrichedTickets = await Promise.all(tickets.map(async (ticket) => {
+      const ticketObj = ticket.toObject();
+      
+      // Check current insurance status - try both ownerId and userId
+      let verification = await Verification.findOne({ 
+        ownerId: ticket.userId, 
+        status: 'active' 
+      });
+      
+      if (!verification) {
+        verification = await Verification.findOne({ 
+          userId: ticket.userId, 
+          status: 'active' 
+        });
+      }
+      
+      if (verification) {
+        // Update insurance fields
+        ticketObj.hasInsurance = true;
+        ticketObj.insuranceTier = verification.tier;
+        
+        // Update in database if not already set
+        if (!ticket.hasInsurance) {
+          await SupportTicket.findByIdAndUpdate(ticket._id, {
+            hasInsurance: true,
+            insuranceTier: verification.tier,
+            priority: 'high' // Upgrade to high if not already
+          });
+          
+          console.log(`✅ Updated ticket ${ticket._id} with insurance info: ${verification.tier.toUpperCase()}`);
+        }
+      } else {
+        console.log(`No insurance found for ticket ${ticket._id}, userId: ${ticket.userId}`);
+      }
+      
+      return ticketObj;
+    }));
+    
+    res.json(enrichedTickets);
   } catch (err) {
     console.error("Get open tickets error:", err);
     res.status(500).json({ error: "Server error" });

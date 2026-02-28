@@ -60,7 +60,7 @@ const supportTicketSchema = new mongoose.Schema({
   },
   insuranceTier: {
     type: String,
-    enum: ['basic', 'premium', null],
+    enum: ['silver', 'gold', 'platinum', null],
     default: null
   },
   insuranceClaimProcessed: {

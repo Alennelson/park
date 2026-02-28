@@ -334,15 +334,19 @@ router.post("/process-claim", async (req, res) => {
   try {
     const { userId, ticketId, claimAmount, reason } = req.body;
     
-    // Get verification
-    const verification = await Verification.findOne({ userId, status: 'active' });
+    // Get verification - try both ownerId and userId
+    let verification = await Verification.findOne({ ownerId: userId, status: 'active' });
+    if (!verification) {
+      verification = await Verification.findOne({ userId: userId, status: 'active' });
+    }
+    
     if (!verification) {
       return res.json({ success: false, error: 'No active insurance found' });
     }
     
     // Check claim limit
     if (claimAmount > verification.claimLimit) {
-      return res.json({ success: false, error: 'Claim amount exceeds tier limit' });
+      return res.json({ success: false, error: `Claim amount exceeds ${verification.tier} tier limit of ₹${verification.claimLimit}` });
     }
     
     // Credit to wallet
@@ -383,7 +387,7 @@ router.post("/process-claim", async (req, res) => {
       });
     }
     
-    console.log(`✅ Insurance claim processed: ₹${claimAmount} credited to user ${userId} for ticket ${ticketId}`);
+    console.log(`✅ Insurance claim processed: ₹${claimAmount} credited to user ${userId} (${verification.tier.toUpperCase()} tier) for ticket ${ticketId}`);
     
     res.json({
       success: true,
