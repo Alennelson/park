@@ -50,6 +50,18 @@ router.post("/login", async (req, res) => {
       return res.json({ error: "Invalid credentials" });
     }
 
+    // Check if user is banned
+    if (user.isBanned) {
+      console.log(`🚫 Banned user attempted login: ${email}`);
+      return res.json({ 
+        error: "ACCOUNT_BANNED",
+        banned: true,
+        banReason: user.banReason || 'Your account has been banned by admin due to policy violations',
+        bannedAt: user.bannedAt,
+        message: `⛔ Account Banned\n\n${user.banReason || 'Your account has been banned by admin due to policy violations'}\n\nIf you believe this is a mistake, please contact ASP support.`
+      });
+    }
+
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) {
       console.log("Invalid password for:", email);

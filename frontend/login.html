@@ -640,6 +640,19 @@ function login() {
   .then(data => {
     console.log("Server response:", data);
 
+    // Check if account is banned
+    if (data.banned || data.error === "ACCOUNT_BANNED") {
+      // Hide loading animation
+      document.getElementById("loadingOverlay").classList.remove("active");
+      
+      // Show ban message
+      const banMessage = data.banReason || 'Your account has been banned by admin due to policy violations';
+      const bannedDate = data.bannedAt ? new Date(data.bannedAt).toLocaleDateString() : '';
+      
+      alert(`⛔ ACCOUNT BANNED\n\n${banMessage}\n\n${bannedDate ? `Banned on: ${bannedDate}\n\n` : ''}Your parking spaces have been removed and you can no longer access ASP services.\n\nIf you believe this is a mistake, please contact ASP support at support@asp.com`);
+      return;
+    }
+
     if (!data.ownerId) {
       // Hide loading animation
       document.getElementById("loadingOverlay").classList.remove("active");

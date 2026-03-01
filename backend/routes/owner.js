@@ -123,14 +123,14 @@ router.delete("/admin/delete/:providerId", async (req, res) => {
   try {
     const { reason } = req.body;
     
-    // Try to delete from ParkingOwner first
-    let provider = await ParkingOwner.findByIdAndDelete(req.params.providerId);
+    // Instead of deleting, BAN the provider
+    let provider = await ParkingOwner.findById(req.params.providerId);
     let providerType = 'ParkingOwner';
     
     // If not found in ParkingOwner, try User collection
     if (!provider) {
       const User = require('../models/user');
-      provider = await User.findByIdAndDelete(req.params.providerId);
+      provider = await User.findById(req.params.providerId);
       providerType = 'User';
     }
     
@@ -140,34 +140,51 @@ router.delete("/admin/delete/:providerId", async (req, res) => {
     
     console.log(`Provider found in ${providerType} collection: ${provider.name} (${provider.email})`);
     
-    // Delete all parking spaces owned by this provider
+    // Mark as banned instead of deleting
+    provider.isBanned = true;
+    provider.banReason = reason || 'Account terminated by admin due to user reports';
+    provider.bannedAt = new Date();
+    provider.bannedBy = 'Admin';
+    provider.isActive = false;
+    await provider.save();
+    
+    console.log(`🚫 Provider BANNED: ${provider.name} (${provider.email})`);
+    
+    // Deactivate all parking spaces (don't delete, just hide)
     const Parking = require('../models/Parking');
-    const deletedParkings = await Parking.deleteMany({ ownerId: req.params.providerId });
-    console.log(`Deleted ${deletedParkings.deletedCount} parking spaces`);
+    const updatedParkings = await Parking.updateMany(
+      { ownerId: req.params.providerId },
+      { isActive: false }
+    );
+    console.log(`Deactivated ${updatedParkings.modifiedCount} parking spaces`);
     
     // Cancel active bookings
     const Booking = require('../models/Booking');
     const updatedBookings = await Booking.updateMany(
       { ownerId: req.params.providerId, status: { $in: ['pending', 'confirmed', 'active'] } },
-      { status: 'cancelled', notes: reason || 'Provider account deleted by admin' }
+      { 
+        status: 'cancelled', 
+        notes: reason || 'Provider account banned by admin - booking cancelled'
+      }
     );
     console.log(`Cancelled ${updatedBookings.modifiedCount} active bookings`);
     
-    console.log(`✅ Provider ${provider.name} (${provider.email}) deleted by admin. Reason: ${reason}`);
+    console.log(`✅ Provider ${provider.name} (${provider.email}) BANNED by admin. Reason: ${reason}`);
     
     res.json({
       success: true,
-      message: 'Provider account and all associated data deleted',
-      deletedProvider: {
+      message: 'Provider account banned and all associated data deactivated',
+      bannedProvider: {
         name: provider.name,
         email: provider.email,
-        collection: providerType
+        collection: providerType,
+        banReason: provider.banReason
       },
-      deletedParkingSpaces: deletedParkings.deletedCount,
+      deactivatedParkingSpaces: updatedParkings.modifiedCount,
       cancelledBookings: updatedBookings.modifiedCount
     });
   } catch (err) {
-    console.error("Delete provider error:", err);
+    console.error("Ban provider error:", err);
     res.json({ success: false, error: err.message });
   }
 });

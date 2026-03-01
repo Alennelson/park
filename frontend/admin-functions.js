@@ -219,7 +219,7 @@ async function loadReports() {
                       class="btn btn-delete" 
                       style="font-size: 12px; padding: 5px 10px; width: 100%;"
                       onclick="deleteProviderFromReport('${providerId}', '${providerName.replace(/'/g, "\\'")}', '${r._id}')">
-                      🗑️ Delete Provider Account
+                      🚫 Ban Provider Account
                     </button>
                   ` : '<small style="color: #999;">No provider ID available</small>'}
                 </div>
@@ -303,40 +303,40 @@ Date: ${createdAt}
 // Delete provider account from report
 async function deleteProviderFromReport(providerId, providerName, reportId) {
   if (!providerId) {
-    alert('❌ Cannot delete: Provider ID not available');
+    alert('❌ Cannot ban: Provider ID not available');
     return;
   }
   
-  if (!confirm(`⚠️ DELETE PROVIDER ACCOUNT?\n\nProvider: ${providerName}\nProvider ID: ${providerId}\n\nThis will:\n✓ Delete the provider account permanently\n✓ Remove all their parking spaces\n✓ Cancel all active bookings\n✓ Mark this report as resolved\n\nThis action CANNOT be undone!`)) {
+  if (!confirm(`⚠️ BAN PROVIDER ACCOUNT?\n\nProvider: ${providerName}\nProvider ID: ${providerId}\n\nThis will:\n✓ Ban the provider account permanently\n✓ Deactivate all their parking spaces\n✓ Cancel all active bookings\n✓ Mark this report as resolved\n✓ Provider cannot login anymore\n\nThis action CANNOT be undone!`)) {
     return;
   }
   
-  const confirmText = prompt('Type "DELETE" in capital letters to confirm:');
-  if (confirmText !== 'DELETE') {
-    alert('❌ Deletion cancelled - confirmation text did not match');
+  const confirmText = prompt('Type "BAN" in capital letters to confirm:');
+  if (confirmText !== 'BAN') {
+    alert('❌ Ban cancelled - confirmation text did not match');
     return;
   }
   
   try {
-    console.log(`Deleting provider ${providerId} from report ${reportId}`);
+    console.log(`Banning provider ${providerId} from report ${reportId}`);
     
-    // Delete the provider account
+    // Ban the provider account
     const deleteResponse = await fetch(getApiUrl(`/api/owner/admin/delete/${providerId}`), {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        reason: `Account terminated by admin due to user report (Report ID: ${reportId})`
+        reason: `Account banned by admin due to user report (Report ID: ${reportId})`
       })
     });
     
     const deleteData = await deleteResponse.json();
     
     if (!deleteData.success) {
-      alert('❌ Error deleting provider: ' + (deleteData.error || 'Unknown error'));
+      alert('❌ Error banning provider: ' + (deleteData.error || 'Unknown error'));
       return;
     }
     
-    console.log('Provider deleted successfully, now updating report status');
+    console.log('Provider banned successfully, now updating report status');
     
     // Mark the report as resolved
     const reportResponse = await fetch(getApiUrl(`/api/reports/admin/update/${reportId}`), {
@@ -345,7 +345,7 @@ async function deleteProviderFromReport(providerId, providerName, reportId) {
       body: JSON.stringify({
         status: 'resolved',
         actionTaken: 'removal',
-        adminNotes: `Provider account deleted by admin on ${new Date().toLocaleString()}`,
+        adminNotes: `Provider account banned by admin on ${new Date().toLocaleString()}`,
         resolvedBy: 'Admin'
       })
     });
@@ -353,9 +353,9 @@ async function deleteProviderFromReport(providerId, providerName, reportId) {
     const reportData = await reportResponse.json();
     
     if (reportData.success) {
-      alert('✅ SUCCESS!\n\n✓ Provider account deleted\n✓ All parking spaces removed\n✓ Active bookings cancelled\n✓ Report marked as resolved');
+      alert('✅ SUCCESS!\n\n✓ Provider account banned\n✓ All parking spaces deactivated\n✓ Active bookings cancelled\n✓ Report marked as resolved\n✓ Provider cannot login anymore');
     } else {
-      alert('⚠️ Provider deleted but failed to update report status: ' + (reportData.error || 'Unknown error'));
+      alert('⚠️ Provider banned but failed to update report status: ' + (reportData.error || 'Unknown error'));
     }
     
     // Reload the reports and dashboard
@@ -363,8 +363,8 @@ async function deleteProviderFromReport(providerId, providerName, reportId) {
     loadDashboard();
     
   } catch (err) {
-    console.error('Delete provider from report error:', err);
-    alert('❌ Failed to delete provider: ' + err.message);
+    console.error('Ban provider from report error:', err);
+    alert('❌ Failed to ban provider: ' + err.message);
   }
 }
 

@@ -17,7 +17,13 @@ const ownerSchema = new mongoose.Schema({
     coordinates: [Number]
   },
 
-  isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+  
+  // Ban status
+  isBanned: { type: Boolean, default: false },
+  banReason: { type: String, default: '' },
+  bannedAt: { type: Date },
+  bannedBy: { type: String, default: 'Admin' }
 });
 
 ownerSchema.index({ location: "2dsphere" });
