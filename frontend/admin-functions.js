@@ -902,12 +902,15 @@ async function viewUserVerification(userId) {
       </div>
       
       <div style="margin: 20px 0;">
-        <h4 style="color: #333; margin-bottom: 10px;">📄 Uploaded ID Proof:</h4>
+        <h4 style="color: #333; margin-bottom: 10px;">📷 Uploaded ID Proof Photo:</h4>
         ${user.idProof ? `
-          ${user.idProof.endsWith('.pdf') ? 
-            `<a href="${getApiUrl('/' + user.idProof)}" target="_blank" style="display: inline-block; padding: 10px 20px; background: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">📄 View PDF Document</a>` :
-            `<img src="${getApiUrl('/' + user.idProof)}" style="max-width: 100%; border-radius: 8px; border: 2px solid #ddd; cursor: pointer;" onclick="window.open('${getApiUrl('/' + user.idProof)}', '_blank')" title="Click to view full size">`
-          }
+          <img 
+            src="${getApiUrl('/' + user.idProof)}" 
+            style="max-width: 100%; border-radius: 8px; border: 2px solid #ddd; cursor: pointer;" 
+            onclick="window.open('${getApiUrl('/' + user.idProof)}', '_blank')" 
+            title="Click to view full size"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <p style="color: #f44336; display: none;">❌ Image failed to load. File may have been deleted.</p>
         ` : '<p style="color: #999;">No ID proof uploaded</p>'}
       </div>
       

@@ -255,7 +255,7 @@
       🛡️ ID Verification Required <span class="required-star">*</span>
     </h3>
     <p style="font-size: 12px; color: #555; margin: 0 0 15px 0;">
-      Upload your government-issued ID to prevent fraud and ensure platform security.
+      Upload a clear photo of your government-issued ID to prevent fraud and ensure platform security.
     </p>
     
     <!-- ID PROOF TYPE -->
@@ -271,11 +271,11 @@
     <!-- ID PROOF UPLOAD -->
     <div class="file-upload-wrapper">
       <label class="file-upload-label">
-        📤 Upload ID Proof <span class="required-star">*</span>
+        📤 Upload ID Proof Photo <span class="required-star">*</span>
       </label>
-      <input type="file" id="idProof" accept="image/*,application/pdf" required onchange="showFileName(this)">
+      <input type="file" id="idProof" accept="image/jpeg,image/jpg,image/png" required onchange="showFileName(this)">
       <div class="file-info" id="fileInfo">
-        📄 Accepted: JPG, PNG, PDF (Max 5MB)
+        📷 Accepted: JPG, PNG only (Max 5MB)
       </div>
     </div>
   </div>
@@ -290,11 +290,22 @@ function showFileName(input) {
   if (input.files && input.files[0]) {
     const file = input.files[0];
     const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    
+    // Check if it's an image
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      fileInfo.innerHTML = '❌ Invalid file type! Only JPG and PNG images accepted.';
+      fileInfo.style.color = '#f44336';
+      fileInfo.style.fontWeight = 'bold';
+      input.value = ''; // Clear the invalid file
+      return;
+    }
+    
     fileInfo.innerHTML = `✅ Selected: ${file.name} (${fileSizeMB} MB)`;
     fileInfo.style.color = '#4CAF50';
     fileInfo.style.fontWeight = 'bold';
   } else {
-    fileInfo.innerHTML = '📄 Accepted: JPG, PNG, PDF (Max 5MB)';
+    fileInfo.innerHTML = '📷 Accepted: JPG, PNG only (Max 5MB)';
     fileInfo.style.color = '#666';
   }
 }
@@ -346,13 +357,20 @@ async function register() {
   }
 
   if (!idProofFile) {
-    alert("⚠️ ID Proof Upload Required\n\nPlease upload your Aadhaar card or any valid government-issued ID proof to complete registration.\n\nThis is mandatory to prevent fraud and ensure platform security.");
+    alert("⚠️ ID Proof Photo Required\n\nPlease upload a clear photo of your Aadhaar card or any valid government-issued ID proof.\n\nAccepted formats: JPG, PNG only\nMax size: 5MB");
+    return;
+  }
+
+  // Check file type (images only)
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+  if (!allowedTypes.includes(idProofFile.type)) {
+    alert("⚠️ Invalid File Type\n\nPlease upload an image file only.\n\nAccepted formats: JPG, PNG\nPDF files are not accepted.");
     return;
   }
 
   // Check file size (5MB limit)
   if (idProofFile.size > 5 * 1024 * 1024) {
-    alert("⚠️ File size too large!\n\nPlease upload a file smaller than 5MB.");
+    alert("⚠️ File size too large!\n\nPlease upload an image smaller than 5MB.");
     return;
   }
 

@@ -70,15 +70,16 @@ fetch('https://parkify-backend-hahp.onrender.com/api/auth/admin/pending-verifica
 ## 📋 What Changed
 
 ### Files Modified:
-- ✅ `backend/routes/auth.js` - Enhanced logging
-- ✅ `frontend/register.html` - Better UI + logging
-- ✅ `frontend/admin-functions.js` - Enhanced debugging
+- ✅ `backend/routes/auth.js` - Enhanced logging + images only
+- ✅ `frontend/register.html` - Better UI + logging + images only
+- ✅ `frontend/admin-functions.js` - Enhanced debugging + image display
 
 ### Visual Changes:
 - ✅ Green bordered ID verification section
 - ✅ File upload shows selected file name
 - ✅ Better success messages
 - ✅ Detailed console logs
+- ✅ **Images only (JPG, PNG) - No PDF support**
 
 ---
 
@@ -130,6 +131,7 @@ fetch('https://parkify-backend-hahp.onrender.com/api/auth/admin/pending-verifica
 ## 📚 Documentation
 
 - `FIXES_SUMMARY.md` - What was fixed
+- `ID_PROOF_IMAGES_ONLY.md` - Images only (no PDF) changes
 - `USER_VERIFICATION_FIXES.md` - Detailed analysis
 - `USER_VERIFICATION_DEPLOYMENT_GUIDE.md` - Step-by-step testing
 - `VISUAL_CHANGES.md` - Before/after comparison
