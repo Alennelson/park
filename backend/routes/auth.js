@@ -34,30 +34,44 @@ const upload = multer({
 /* REGISTER WITH ID PROOF */
 router.post("/register", upload.single("idProof"), async (req, res) => {
   try {
+    console.log("=== REGISTRATION REQUEST RECEIVED ===");
     const { name, email, password, phone, idProofType } = req.body;
 
-    console.log("Register request:", { name, email, phone, idProofType });
+    console.log("Request body:", { name, email, phone, idProofType });
+    console.log("File uploaded:", req.file ? {
+      filename: req.file.filename,
+      path: req.file.path,
+      size: req.file.size,
+      mimetype: req.file.mimetype
+    } : "NO FILE");
 
+    // Validation
     if (!name || !email || !password || !phone) {
+      console.log("❌ Validation failed: Missing required fields");
       return res.json({ success: false, message: "All fields required" });
     }
 
     if (!req.file) {
+      console.log("❌ Validation failed: No ID proof uploaded");
       return res.json({ success: false, message: "ID proof upload is mandatory" });
     }
 
     if (!idProofType) {
+      console.log("❌ Validation failed: No ID proof type selected");
       return res.json({ success: false, message: "Please select ID proof type" });
     }
 
+    // Check if email already exists
     const existing = await User.findOne({ email });
     if (existing) {
-      console.log("Email already exists:", email);
+      console.log("❌ Email already exists:", email);
       return res.json({ success: false, message: "Email already exists" });
     }
 
+    // Hash password
     const hash = await bcrypt.hash(password, 10);
 
+    // Create user
     const user = new User({ 
       name, 
       email, 
@@ -67,16 +81,29 @@ router.post("/register", upload.single("idProof"), async (req, res) => {
       idProofType,
       verificationStatus: 'pending'
     });
+    
     await user.save();
 
-    console.log("User registered successfully (pending verification):", email);
+    console.log("✅ User registered successfully:");
+    console.log("  - Name:", user.name);
+    console.log("  - Email:", user.email);
+    console.log("  - Phone:", user.phone);
+    console.log("  - ID Type:", user.idProofType);
+    console.log("  - ID Proof Path:", user.idProof);
+    console.log("  - Status:", user.verificationStatus);
+    console.log("  - User ID:", user._id);
+    console.log("=== REGISTRATION SUCCESSFUL ===");
+    
     res.json({ 
       success: true,
-      message: "Registration successful! Your account is pending admin verification. You will be able to login once approved."
+      message: "Registration successful! Your account is pending admin verification. You will be able to login once approved.",
+      userId: user._id
     });
   } catch (err) {
-    console.error("Register error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("=== REGISTRATION ERROR ===");
+    console.error("Error:", err);
+    console.error("Stack:", err.stack);
+    res.status(500).json({ success: false, message: "Server error: " + err.message });
   }
 });
 
@@ -156,15 +183,27 @@ module.exports = router;
 // Get all pending verifications
 router.get("/admin/pending-verifications", async (req, res) => {
   try {
+    console.log("=== ADMIN: FETCHING PENDING VERIFICATIONS ===");
+    
     const users = await User.find({ verificationStatus: 'pending' })
       .sort({ createdAt: -1 })
       .select('-password');
     
-    console.log(`Found ${users.length} pending verifications`);
+    console.log(`✅ Found ${users.length} pending verifications`);
+    
+    if (users.length > 0) {
+      console.log("Pending users:");
+      users.forEach((u, i) => {
+        console.log(`  ${i + 1}. ${u.name} (${u.email}) - ${u.idProofType} - Registered: ${u.createdAt}`);
+      });
+    }
+    
     res.json(users);
   } catch (err) {
-    console.error("Get pending verifications error:", err);
-    res.status(500).json({ error: "Server error" });
+    console.error("=== GET PENDING VERIFICATIONS ERROR ===");
+    console.error("Error:", err);
+    console.error("Stack:", err.stack);
+    res.status(500).json({ error: "Server error: " + err.message });
   }
 });
 

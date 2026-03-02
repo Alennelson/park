@@ -653,6 +653,21 @@ function login() {
       return;
     }
 
+    // Check if verification is pending
+    if (data.pending || data.error === "VERIFICATION_PENDING") {
+      document.getElementById("loadingOverlay").classList.remove("active");
+      alert('⏳ ACCOUNT PENDING VERIFICATION\n\nYour account is currently under review by our admin team.\n\nYou will be able to login once your ID proof is verified. This usually takes 24-48 hours.\n\nThank you for your patience!');
+      return;
+    }
+
+    // Check if verification was rejected
+    if (data.rejected || data.error === "VERIFICATION_REJECTED") {
+      document.getElementById("loadingOverlay").classList.remove("active");
+      const rejectionReason = data.rejectionReason || 'Your account verification was rejected by admin';
+      alert(`❌ ACCOUNT VERIFICATION REJECTED\n\n${rejectionReason}\n\nYour account cannot be activated. Please contact ASP support at support@asp.com for more information or to appeal this decision.`);
+      return;
+    }
+
     if (!data.ownerId) {
       // Hide loading animation
       document.getElementById("loadingOverlay").classList.remove("active");

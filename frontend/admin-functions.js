@@ -770,17 +770,31 @@ loadDashboard();
 // Load pending verifications
 async function loadPendingVerifications() {
   try {
-    const response = await fetch(getApiUrl('/api/auth/admin/pending-verifications'));
-    const users = await response.json();
+    console.log("=== LOADING PENDING VERIFICATIONS ===");
+    const apiUrl = getApiUrl('/api/auth/admin/pending-verifications');
+    console.log("API URL:", apiUrl);
     
-    console.log('Pending verifications loaded:', users);
+    const response = await fetch(apiUrl);
+    console.log("Response status:", response.status);
+    console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const users = await response.json();
+    console.log("Pending verifications received:", users);
+    console.log("Count:", users.length);
     
     const list = document.getElementById('pendingVerificationsList');
     
     if (!users || users.length === 0) {
-      list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No pending verifications</p>';
+      console.log("No pending verifications found");
+      list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">✅ No pending verifications<br><small>All users have been reviewed</small></p>';
       return;
     }
+    
+    console.log(`Displaying ${users.length} pending verifications`);
     
     list.innerHTML = `
       <table>
@@ -795,7 +809,9 @@ async function loadPendingVerifications() {
           </tr>
         </thead>
         <tbody>
-          ${users.map(u => `
+          ${users.map(u => {
+            console.log("Processing user:", u);
+            return `
             <tr style="background: #fff3cd;">
               <td><b>${u.name}</b></td>
               <td>${u.email}</td>
@@ -808,13 +824,23 @@ async function loadPendingVerifications() {
                 <button class="btn btn-reject" onclick="rejectUser('${u._id}', '${u.name.replace(/'/g, "\\'")}')">✗ Reject</button>
               </td>
             </tr>
-          `).join('')}
+          `}).join('')}
         </tbody>
       </table>
     `;
+    
+    console.log("✅ Pending verifications loaded successfully");
   } catch (err) {
-    console.error('Load pending verifications error:', err);
-    document.getElementById('pendingVerificationsList').innerHTML = '<p style="color: #f44336; text-align: center;">Failed to load pending verifications</p>';
+    console.error("=== LOAD PENDING VERIFICATIONS ERROR ===");
+    console.error("Error:", err);
+    console.error("Stack:", err.stack);
+    document.getElementById('pendingVerificationsList').innerHTML = `
+      <p style="color: #f44336; text-align: center; padding: 20px;">
+        ❌ Failed to load pending verifications
+        <br><small>${err.message}</small>
+        <br><small>Check console for details</small>
+      </p>
+    `;
   }
 }
 
