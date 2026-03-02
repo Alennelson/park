@@ -354,6 +354,11 @@
       </div>
 
       <div class="card">
+        <h3>⏳ Pending Verifications</h3>
+        <div id="pendingVerificationsList"></div>
+      </div>
+
+      <div class="card">
         <h3>All Users</h3>
         <div id="usersList"></div>
       </div>
@@ -389,7 +394,10 @@ function showSection(sectionId) {
   else if (sectionId === 'withdrawalsSection') loadWithdrawals();
   else if (sectionId === 'reportsSection') loadReports();
   else if (sectionId === 'supportSection') loadSupportTickets();
-  else if (sectionId === 'usersSection') loadUsers();
+  else if (sectionId === 'usersSection') {
+    loadPendingVerifications();
+    loadUsers();
+  }
 }
 
 // Load dashboard stats

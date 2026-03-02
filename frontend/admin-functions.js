@@ -763,3 +763,331 @@ function logout() {
 
 // Load dashboard on page load
 loadDashboard();
+
+
+/* ================= USER VERIFICATION FUNCTIONS ================= */
+
+// Load pending verifications
+async function loadPendingVerifications() {
+  try {
+    const response = await fetch(getApiUrl('/api/auth/admin/pending-verifications'));
+    const users = await response.json();
+    
+    console.log('Pending verifications loaded:', users);
+    
+    const list = document.getElementById('pendingVerificationsList');
+    
+    if (!users || users.length === 0) {
+      list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No pending verifications</p>';
+      return;
+    }
+    
+    list.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>ID Type</th>
+            <th>Registered</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${users.map(u => `
+            <tr style="background: #fff3cd;">
+              <td><b>${u.name}</b></td>
+              <td>${u.email}</td>
+              <td>${u.phone || 'N/A'}</td>
+              <td>${u.idProofType || 'N/A'}</td>
+              <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+              <td>
+                <button class="btn btn-view" onclick="viewUserVerification('${u._id}')">👁️ View ID</button>
+                <button class="btn btn-approve" onclick="approveUser('${u._id}', '${u.name.replace(/'/g, "\\'")}')">✓ Approve</button>
+                <button class="btn btn-reject" onclick="rejectUser('${u._id}', '${u.name.replace(/'/g, "\\'")}')">✗ Reject</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    console.error('Load pending verifications error:', err);
+    document.getElementById('pendingVerificationsList').innerHTML = '<p style="color: #f44336; text-align: center;">Failed to load pending verifications</p>';
+  }
+}
+
+// View user ID proof
+async function viewUserVerification(userId) {
+  try {
+    const response = await fetch(getApiUrl('/api/auth/admin/all-users'));
+    const users = await response.json();
+    const user = users.find(u => u._id === userId);
+    
+    if (!user) {
+      alert('User not found');
+      return;
+    }
+    
+    // Create modal to show ID proof
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      padding: 20px;
+      overflow-y: auto;
+    `;
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 800px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    `;
+    
+    const statusColor = user.verificationStatus === 'pending' ? '#ff9800' : 
+                       user.verificationStatus === 'approved' ? '#4CAF50' : '#f44336';
+    
+    modalContent.innerHTML = `
+      <h2 style="color: #333; margin-bottom: 20px;">👤 User Verification Details</h2>
+      
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <p><b>Name:</b> ${user.name}</p>
+        <p><b>Email:</b> ${user.email}</p>
+        <p><b>Phone:</b> ${user.phone || 'N/A'}</p>
+        <p><b>ID Type:</b> ${user.idProofType || 'N/A'}</p>
+        <p><b>Status:</b> <span style="color: ${statusColor}; font-weight: bold;">${user.verificationStatus.toUpperCase()}</span></p>
+        <p><b>Registered:</b> ${new Date(user.createdAt).toLocaleString()}</p>
+        ${user.verifiedAt ? `<p><b>Verified:</b> ${new Date(user.verifiedAt).toLocaleString()}</p>` : ''}
+        ${user.rejectionReason ? `<p><b>Rejection Reason:</b> ${user.rejectionReason}</p>` : ''}
+      </div>
+      
+      <div style="margin: 20px 0;">
+        <h4 style="color: #333; margin-bottom: 10px;">📄 Uploaded ID Proof:</h4>
+        ${user.idProof ? `
+          ${user.idProof.endsWith('.pdf') ? 
+            `<a href="${getApiUrl('/' + user.idProof)}" target="_blank" style="display: inline-block; padding: 10px 20px; background: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">📄 View PDF Document</a>` :
+            `<img src="${getApiUrl('/' + user.idProof)}" style="max-width: 100%; border-radius: 8px; border: 2px solid #ddd; cursor: pointer;" onclick="window.open('${getApiUrl('/' + user.idProof)}', '_blank')" title="Click to view full size">`
+          }
+        ` : '<p style="color: #999;">No ID proof uploaded</p>'}
+      </div>
+      
+      <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+        ${user.verificationStatus === 'pending' ? `
+          <button class="btn btn-approve" onclick="approveUser('${user._id}', '${user.name.replace(/'/g, "\\'")}'); this.closest('.modal-wrapper').remove();">✓ Approve User</button>
+          <button class="btn btn-reject" onclick="rejectUser('${user._id}', '${user.name.replace(/'/g, "\\'")}'); this.closest('.modal-wrapper').remove();">✗ Reject User</button>
+        ` : ''}
+        ${!user.isBanned ? `
+          <button class="btn btn-delete" onclick="banUserAccount('${user._id}', '${user.name.replace(/'/g, "\\'")}'); this.closest('.modal-wrapper').remove();">🚫 Ban User</button>
+        ` : ''}
+        <button class="btn btn-delete" onclick="deleteUserAccount('${user._id}', '${user.name.replace(/'/g, "\\'")}'); this.closest('.modal-wrapper').remove();">🗑️ Delete User</button>
+        <button class="btn btn-view" onclick="this.closest('.modal-wrapper').remove()">Close</button>
+      </div>
+    `;
+    
+    modal.className = 'modal-wrapper';
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+  } catch (err) {
+    console.error('View user verification error:', err);
+    alert('Failed to load user details');
+  }
+}
+
+// Approve user
+async function approveUser(userId, userName) {
+  if (!confirm(`✅ Approve user: ${userName}?\n\nThis will allow them to login and use ASP services.`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(getApiUrl(`/api/auth/admin/approve-user/${userId}`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert(`✅ User Approved: ${userName}\n\nThey can now login and use ASP services.`);
+      loadPendingVerifications();
+      loadUsers();
+      loadDashboard();
+    } else {
+      alert('❌ Error: ' + (data.error || 'Failed to approve user'));
+    }
+  } catch (err) {
+    console.error('Approve user error:', err);
+    alert('❌ Failed to approve user');
+  }
+}
+
+// Reject user
+async function rejectUser(userId, userName) {
+  const reason = prompt(`❌ Reject user: ${userName}?\n\nEnter rejection reason:`);
+  if (!reason) return;
+  
+  try {
+    const response = await fetch(getApiUrl(`/api/auth/admin/reject-user/${userId}`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert(`❌ User Rejected: ${userName}\n\nReason: ${reason}\n\nThey will see this reason when trying to login.`);
+      loadPendingVerifications();
+      loadUsers();
+      loadDashboard();
+    } else {
+      alert('❌ Error: ' + (data.error || 'Failed to reject user'));
+    }
+  } catch (err) {
+    console.error('Reject user error:', err);
+    alert('❌ Failed to reject user');
+  }
+}
+
+// Ban user account
+async function banUserAccount(userId, userName) {
+  const reason = prompt(`🚫 Ban user: ${userName}?\n\nEnter ban reason:`);
+  if (!reason) return;
+  
+  try {
+    const response = await fetch(getApiUrl(`/api/auth/admin/ban-user/${userId}`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert(`🚫 User Banned: ${userName}\n\nReason: ${reason}\n\nThey can no longer login.`);
+      loadUsers();
+      loadPendingVerifications();
+      loadDashboard();
+    } else {
+      alert('❌ Error: ' + (data.error || 'Failed to ban user'));
+    }
+  } catch (err) {
+    console.error('Ban user error:', err);
+    alert('❌ Failed to ban user');
+  }
+}
+
+// Delete user account
+async function deleteUserAccount(userId, userName) {
+  if (!confirm(`⚠️ DELETE USER: ${userName}?\n\nThis will permanently delete the user account.\n\nThis action CANNOT be undone!`)) {
+    return;
+  }
+  
+  const confirmText = prompt('Type "DELETE" to confirm:');
+  if (confirmText !== 'DELETE') {
+    alert('Deletion cancelled');
+    return;
+  }
+  
+  try {
+    const response = await fetch(getApiUrl(`/api/auth/admin/delete-user/${userId}`), {
+      method: 'DELETE'
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert(`🗑️ User Deleted: ${userName}`);
+      loadUsers();
+      loadPendingVerifications();
+      loadDashboard();
+    } else {
+      alert('❌ Error: ' + (data.error || 'Failed to delete user'));
+    }
+  } catch (err) {
+    console.error('Delete user error:', err);
+    alert('❌ Failed to delete user');
+  }
+}
+
+// Update loadUsers to show verification status
+async function loadUsers() {
+  try {
+    const response = await fetch(getApiUrl('/api/auth/admin/all-users'));
+    const users = await response.json();
+    
+    const list = document.getElementById('usersList');
+    
+    if (users.length === 0) {
+      list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No users found</p>';
+      return;
+    }
+    
+    list.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th>Registered</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${users.map(u => {
+            const bgColor = u.isBanned ? '#ffebee' : 
+                           u.verificationStatus === 'approved' ? '#e8f5e9' : 
+                           u.verificationStatus === 'pending' ? '#fff3cd' : '#fce4ec';
+            
+            return `
+            <tr style="background: ${bgColor};">
+              <td><b>${u.name}</b></td>
+              <td>${u.email}</td>
+              <td>${u.phone || 'N/A'}</td>
+              <td>
+                ${u.isBanned ? '<span class="status-badge" style="background: #f44336; color: white;">BANNED</span>' : ''}
+                <span class="status-badge status-${u.verificationStatus}">${u.verificationStatus.toUpperCase()}</span>
+              </td>
+              <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+              <td>
+                <button class="btn btn-view" onclick="viewUserVerification('${u._id}')">👁️ View</button>
+                ${u.verificationStatus === 'pending' ? `
+                  <button class="btn btn-approve" onclick="approveUser('${u._id}', '${u.name.replace(/'/g, "\\'")}')">✓ Approve</button>
+                ` : ''}
+                ${!u.isBanned ? `
+                  <button class="btn btn-delete" onclick="banUserAccount('${u._id}', '${u.name.replace(/'/g, "\\'")}')">🚫 Ban</button>
+                ` : ''}
+                <button class="btn btn-delete" onclick="deleteUserAccount('${u._id}', '${u.name.replace(/'/g, "\\'")}')">🗑️ Delete</button>
+              </td>
+            </tr>
+          `}).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    console.error('Load users error:', err);
+    document.getElementById('usersList').innerHTML = '<p style="color: #f44336; text-align: center;">Failed to load users</p>';
+  }
+}
