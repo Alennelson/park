@@ -30,10 +30,11 @@
       background: #FFD400;
       font-family: Arial, sans-serif;
       margin: 0;
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
+      padding: 20px 0;
     }
 
     .box {
@@ -42,19 +43,60 @@
       padding: 20px;
       border-radius: 15px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      margin: 20px 0;
     }
 
     .input-group {
       position: relative;
+      margin-bottom: 8px;
     }
 
-    input {
+    input, select {
       width: 100%;
       padding: 12px;
       margin: 8px 0;
       border-radius: 10px;
       border: none;
       font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    select {
+      background: white;
+      cursor: pointer;
+    }
+
+    .file-upload-wrapper {
+      margin: 8px 0;
+      background: white;
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .file-upload-label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    input[type="file"] {
+      padding: 8px;
+      font-size: 13px;
+      background: #f5f5f5;
+      cursor: pointer;
+    }
+
+    .file-info {
+      font-size: 11px;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .required-star {
+      color: #f44336;
+      font-weight: bold;
     }
 
     .eye {
@@ -77,6 +119,10 @@
       color: white;
       font-weight: bold;
       cursor: pointer;
+    }
+
+    button:hover {
+      background: #333;
     }
 
     /* LOADING OVERLAY */
@@ -166,19 +212,41 @@
 <div class="box">
   <h2>Create Account</h2>
 
-  <input id="name" placeholder="Name">
-  <input id="email" type="email" placeholder="Email">
+  <input id="name" placeholder="Name" required>
+  <input id="email" type="email" placeholder="Email" required>
+  <input id="phone" type="tel" placeholder="Phone Number" required>
 
   <!-- PASSWORD -->
   <div class="input-group">
-    <input id="password" type="password" placeholder="Password">
+    <input id="password" type="password" placeholder="Password" required>
     <span class="eye" onclick="togglePassword('password', this)">👁️</span>
   </div>
 
   <!-- CONFIRM PASSWORD -->
   <div class="input-group">
-    <input id="confirm" type="password" placeholder="Re-enter Password">
+    <input id="confirm" type="password" placeholder="Re-enter Password" required>
     <span class="eye" onclick="togglePassword('confirm', this)">👁️</span>
+  </div>
+
+  <!-- ID PROOF TYPE -->
+  <select id="idProofType" required>
+    <option value="">Select ID Proof Type <span class="required-star">*</span></option>
+    <option value="aadhaar">Aadhaar Card</option>
+    <option value="passport">Passport</option>
+    <option value="driving_license">Driving License</option>
+    <option value="voter_id">Voter ID</option>
+    <option value="pan_card">PAN Card</option>
+  </select>
+
+  <!-- ID PROOF UPLOAD -->
+  <div class="file-upload-wrapper">
+    <label class="file-upload-label">
+      Upload ID Proof <span class="required-star">*</span>
+    </label>
+    <input type="file" id="idProof" accept="image/*,application/pdf" required>
+    <div class="file-info">
+      📄 Accepted: JPG, PNG, PDF (Max 5MB)
+    </div>
   </div>
 
   <button onclick="register()">Register</button>
@@ -208,16 +276,35 @@ function hideLoading() {
 }
 
 /* REGISTER */
-function register() {
+async function register() {
   const name = document.getElementById("name").value.trim();
   const email = document.getElementById("email").value.trim();
+  const phone = document.getElementById("phone").value.trim();
   const password = document.getElementById("password").value.trim();
   const confirm = document.getElementById("confirm").value.trim();
+  const idProofType = document.getElementById("idProofType").value;
+  const idProofFile = document.getElementById("idProof").files[0];
 
-  console.log("Register clicked", { name, email, password: "***" });
+  console.log("Register clicked", { name, email, phone, idProofType, hasFile: !!idProofFile });
 
-  if (!name || !email || !password || !confirm) {
+  if (!name || !email || !phone || !password || !confirm) {
     alert("Please fill all fields");
+    return;
+  }
+
+  if (!idProofType) {
+    alert("Please select ID proof type");
+    return;
+  }
+
+  if (!idProofFile) {
+    alert("⚠️ ID Proof Upload Required\n\nPlease upload your Aadhaar card or any valid government-issued ID proof to complete registration.\n\nThis is mandatory to prevent fraud and ensure platform security.");
+    return;
+  }
+
+  // Check file size (5MB limit)
+  if (idProofFile.size > 5 * 1024 * 1024) {
+    alert("File size too large! Please upload a file smaller than 5MB.");
     return;
   }
 
@@ -229,40 +316,46 @@ function register() {
   // Show loading animation
   showLoading();
 
+  // Create FormData for file upload
+  const formData = new FormData();
+  formData.append('name', name);
+  formData.append('email', email);
+  formData.append('phone', phone);
+  formData.append('password', password);
+  formData.append('idProofType', idProofType);
+  formData.append('idProof', idProofFile);
+
   console.log("Sending request to:", getApiUrl("/api/auth/register"));
 
-  fetch(getApiUrl("/api/auth/register"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password })
-  })
-  .then(res => {
-    console.log("Response status:", res.status);
-    return res.json();
-  })
-  .then(data => {
+  try {
+    const response = await fetch(getApiUrl("/api/auth/register"), {
+      method: "POST",
+      body: formData // Don't set Content-Type, browser will set it with boundary
+    });
+
+    console.log("Response status:", response.status);
+    const data = await response.json();
     console.log("Response data:", data);
     
     // Hide loading
     hideLoading();
     
     if (!data.success) {
-      alert(data.message || "Registration failed");
+      alert("❌ Registration Failed\n\n" + (data.message || "Unknown error"));
       return;
     }
 
-    alert("✅ Account created successfully!\n\nRedirecting to login...");
+    alert("✅ Registration Successful!\n\n" + (data.message || "Your account is pending admin verification. You will be able to login once your ID proof is verified.\n\nThis usually takes 24-48 hours."));
 
-    /* AUTO REDIRECT AFTER 1 SECOND */
+    /* AUTO REDIRECT AFTER 2 SECONDS */
     setTimeout(() => {
       window.location.href = "login.html";
-    }, 1000);
-  })
-  .catch(err => {
+    }, 2000);
+  } catch (err) {
     console.error("Registration error:", err);
     hideLoading();
     alert("❌ Server error. Please try again.");
-  });
+  }
 }
 </script>
 
