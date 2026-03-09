@@ -262,33 +262,77 @@ router.post("/admin/reject-withdrawal/:withdrawalId", async (req, res) => {
 /* GET ALL PENDING WITHDRAWALS (Admin) */
 router.get("/admin/pending-withdrawals", async (req, res) => {
   try {
+    console.log("=== FETCHING PENDING WITHDRAWALS ===");
+    
     const withdrawals = await Withdrawal.find({ status: 'pending' })
       .sort({ createdAt: -1 });
     
-    // Manually fetch owner details for each withdrawal
+    console.log(`Found ${withdrawals.length} pending withdrawals`);
+    
+    if (withdrawals.length === 0) {
+      console.log("No pending withdrawals");
+      return res.json([]);
+    }
+    
+    // Fetch owner details from BOTH ParkingOwner and User models
     const ParkingOwner = require('../models/ParkingOwner');
+    const User = require('../models/user');
+    
     const withdrawalsWithOwner = await Promise.all(
       withdrawals.map(async (w) => {
-        const owner = await ParkingOwner.findById(w.ownerId);
-        return {
-          ...w.toObject(),
-          ownerId: owner ? {
-            _id: owner._id,
-            name: owner.name,
-            email: owner.email
-          } : {
-            _id: w.ownerId,
-            name: 'Unknown',
-            email: ''
+        console.log(`\n--- Processing Withdrawal ---`);
+        console.log(`Withdrawal ID: ${w._id}`);
+        console.log(`Owner ID: ${w.ownerId}`);
+        console.log(`Amount: ₹${w.amount}`);
+        
+        // Try ParkingOwner first
+        let owner = await ParkingOwner.findById(w.ownerId);
+        
+        if (owner) {
+          console.log(`✅ Found in ParkingOwner: ${owner.name} (${owner.email})`);
+        } else {
+          console.log(`❌ Not found in ParkingOwner, checking User model...`);
+          // If not found, try User model
+          owner = await User.findById(w.ownerId);
+          
+          if (owner) {
+            console.log(`✅ Found in User: ${owner.name} (${owner.email})`);
+          } else {
+            console.log(`❌ Not found in User model either!`);
+            console.log(`⚠️ Owner ID ${w.ownerId} does not exist in any model`);
           }
-        };
+        }
+        
+        if (owner) {
+          return {
+            ...w.toObject(),
+            ownerId: {
+              _id: owner._id,
+              name: owner.name,
+              email: owner.email
+            }
+          };
+        } else {
+          console.log(`⚠️ Returning "Unknown User" for withdrawal ${w._id}`);
+          return {
+            ...w.toObject(),
+            ownerId: {
+              _id: w.ownerId,
+              name: 'Unknown User',
+              email: 'User not found in database'
+            }
+          };
+        }
       })
     );
     
-    console.log(`Found ${withdrawalsWithOwner.length} pending withdrawals`);
+    console.log(`\n✅ Returning ${withdrawalsWithOwner.length} withdrawals`);
+    console.log("=== END FETCHING WITHDRAWALS ===\n");
     res.json(withdrawalsWithOwner);
   } catch (err) {
-    console.error("Get pending withdrawals error:", err);
+    console.error("=== GET PENDING WITHDRAWALS ERROR ===");
+    console.error("Error:", err);
+    console.error("Stack:", err.stack);
     res.status(500).json({ error: "Server error", message: err.message });
   }
 });
