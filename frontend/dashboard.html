@@ -55,6 +55,7 @@
       cursor: pointer;
       border-radius: 12px;
       transition: all 0.3s;
+      position: relative;
     }
 
     .menu-item:hover {
@@ -73,6 +74,22 @@
     .menu-label {
       font-size: 9px;
       margin-top: 3px;
+    }
+
+    /* NOTIFICATION BADGE */
+    .notification-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #ff4444;
+      color: white;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
 
     .logout-menu {
@@ -378,6 +395,12 @@
       <div class="menu-label">Stats</div>
     </div>
     
+    <div class="menu-item" onclick="showSection('inboxSection')" title="Inbox">
+      <span class="menu-icon">📬</span>
+      <div class="menu-label">Inbox</div>
+      <span class="notification-badge" id="inboxBadge" style="display: none;">0</span>
+    </div>
+    
     <div class="menu-item" onclick="showSection('settingsSection')" title="Settings">
       <span class="menu-icon">⚙️</span>
       <div class="menu-label">Settings</div>
@@ -386,6 +409,7 @@
     <div class="menu-item logout-menu" onclick="logout()" title="Logout">
       <span class="menu-icon">🚪</span>
       <div class="menu-label">Logout</div>
+    </div>
     </div>
   </div>
 
@@ -718,6 +742,21 @@
         <button class="btn-primary" onclick="logout()">🚪 Logout</button>
       </div>
     </div>
+
+    <!-- INBOX SECTION -->
+    <div id="inboxSection" class="section">
+      <div class="top-bar">
+        <h2>📬 Inbox</h2>
+      </div>
+
+      <div class="card">
+        <h4>Messages & Bookings</h4>
+        <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
+          View booking details and communicate with drivers/providers
+        </p>
+        <div id="inboxMessagesList"></div>
+      </div>
+    </div>
   </div>
 
   <!-- RIGHT SIDEBAR INBOX -->
@@ -939,8 +978,11 @@ function showSection(sectionId) {
   } else if (sectionId === 'statsSection') {
     menuItems[4].classList.add('active');
     loadDetailedStats();
-  } else if (sectionId === 'settingsSection') {
+  } else if (sectionId === 'inboxSection') {
     menuItems[5].classList.add('active');
+    loadInboxMessages();
+  } else if (sectionId === 'settingsSection') {
+    menuItems[6].classList.add('active');
   }
 }
 
@@ -1925,6 +1967,128 @@ setInterval(() => {
   loadWallet();
   loadVerificationStatus();
 }, 30000);
+
+/* ================= INBOX SYSTEM ================= */
+
+// Load inbox messages (bookings with provider/driver details)
+async function loadInboxMessages() {
+  try {
+    console.log("Loading inbox messages for:", ownerId);
+    
+    const response = await fetch(getApiUrl(`/api/booking/owner/${ownerId}`));
+    const bookings = await response.json();
+    
+    console.log("Bookings received:", bookings);
+    
+    const list = document.getElementById('inboxMessagesList');
+    
+    if (!bookings || bookings.length === 0) {
+      list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No messages yet</p>';
+      updateInboxBadge(0);
+      return;
+    }
+    
+    // Count unread (active bookings)
+    const unreadCount = bookings.filter(b => b.status === 'active' || b.status === 'pending').length;
+    updateInboxBadge(unreadCount);
+    
+    // Sort by date (newest first)
+    bookings.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+    
+    list.innerHTML = bookings.map(booking => {
+      const isActive = booking.status === 'active' || booking.status === 'pending';
+      const statusColor = booking.status === 'completed' ? '#4CAF50' : 
+                         booking.status === 'active' ? '#ff9800' : '#999';
+      
+      return `
+        <div style="background: ${isActive ? '#fff3cd' : 'white'}; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid ${statusColor};">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+            <div>
+              <div style="font-weight: bold; font-size: 16px; margin-bottom: 5px;">
+                ${isActive ? '🔔 ' : ''}${booking.userName || 'Driver'}
+              </div>
+              <div style="font-size: 13px; color: #666;">
+                📧 ${booking.userEmail || 'No email'}
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <span style="background: ${statusColor}; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                ${booking.status.toUpperCase()}
+              </span>
+            </div>
+          </div>
+          
+          <div style="background: #f5f5f5; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+            <div style="font-size: 13px; color: #666; margin-bottom: 5px;">
+              <b>Parking:</b> ${booking.parkingNotes || 'N/A'}
+            </div>
+            <div style="font-size: 13px; color: #666; margin-bottom: 5px;">
+              <b>Vehicle:</b> ${booking.vehicleNumber || 'N/A'}
+            </div>
+            <div style="font-size: 13px; color: #666; margin-bottom: 5px;">
+              <b>Start:</b> ${new Date(booking.startTime).toLocaleString()}
+            </div>
+            ${booking.endTime ? `
+              <div style="font-size: 13px; color: #666;">
+                <b>End:</b> ${new Date(booking.endTime).toLocaleString()}
+              </div>
+            ` : ''}
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 14px; color: #333;">
+              <b>Amount:</b> ₹${booking.totalAmount || booking.price || 0}
+            </div>
+            <div style="font-size: 12px; color: #666;">
+              Booking ID: ${booking._id.substring(0, 8)}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+  } catch (err) {
+    console.error('Load inbox error:', err);
+    document.getElementById('inboxMessagesList').innerHTML = '<p style="color: #f44336; text-align: center;">Failed to load messages</p>';
+  }
+}
+
+// Update inbox notification badge
+function updateInboxBadge(count) {
+  const badge = document.getElementById('inboxBadge');
+  if (badge) {
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : count;
+      badge.style.display = 'block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
+// Check for new bookings periodically and update badge
+setInterval(async () => {
+  try {
+    const response = await fetch(getApiUrl(`/api/booking/owner/${ownerId}`));
+    const bookings = await response.json();
+    const unreadCount = bookings.filter(b => b.status === 'active' || b.status === 'pending').length;
+    updateInboxBadge(unreadCount);
+  } catch (err) {
+    console.error('Badge update error:', err);
+  }
+}, 30000); // Check every 30 seconds
+
+// Initial badge update
+setTimeout(() => {
+  fetch(getApiUrl(`/api/booking/owner/${ownerId}`))
+    .then(res => res.json())
+    .then(bookings => {
+      const unreadCount = bookings.filter(b => b.status === 'active' || b.status === 'pending').length;
+      updateInboxBadge(unreadCount);
+    })
+    .catch(err => console.error('Initial badge update error:', err));
+}, 2000);
+
 </script>
 
 </body>
