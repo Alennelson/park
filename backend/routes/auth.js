@@ -71,25 +71,43 @@ router.post("/register", upload.single("idProof"), async (req, res) => {
     // Hash password
     const hash = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Convert image to Base64 for permanent storage in MongoDB
+    const fs = require('fs');
+    const imageBuffer = fs.readFileSync(req.file.path);
+    const base64Image = imageBuffer.toString('base64');
+    const imageDataUrl = `data:${req.file.mimetype};base64,${base64Image}`;
+    
+    console.log("✅ Image converted to Base64 for permanent storage");
+    console.log("  - Original size:", req.file.size, "bytes");
+    console.log("  - Base64 size:", base64Image.length, "characters");
+
+    // Create user with Base64 image stored in database
     const user = new User({ 
       name, 
       email, 
       password: hash,
       phone,
-      idProof: req.file.path,
+      idProof: imageDataUrl, // Store Base64 data URL instead of file path
       idProofType,
       verificationStatus: 'pending'
     });
     
     await user.save();
 
+    // Delete the temporary file from uploads folder
+    try {
+      fs.unlinkSync(req.file.path);
+      console.log("✅ Temporary file deleted:", req.file.path);
+    } catch (err) {
+      console.log("⚠️ Could not delete temporary file:", err.message);
+    }
+
     console.log("✅ User registered successfully:");
     console.log("  - Name:", user.name);
     console.log("  - Email:", user.email);
     console.log("  - Phone:", user.phone);
     console.log("  - ID Type:", user.idProofType);
-    console.log("  - ID Proof Path:", user.idProof);
+    console.log("  - ID Proof: Stored as Base64 in database (permanent)");
     console.log("  - Status:", user.verificationStatus);
     console.log("  - User ID:", user._id);
     console.log("=== REGISTRATION SUCCESSFUL ===");
