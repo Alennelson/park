@@ -1023,30 +1023,6 @@ function showParkingInfo(spot){
         <button class='cancel' onclick="closeInfo()">Close</button>`;
       infoPanel.style.display="block";
     });
-}t(135deg, #FFD700 0%, #FFA500 100%)';
-          badgeText = 'GOLD';
-          badgeIcon = '&#9733;'; // Star symbol
-        } else if (tier === 'silver') {
-          badgeColor = 'linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 100%)';
-          badgeText = 'SILVER';
-          badgeIcon = '&#9733;'; // Star symbol
-        }
-        
-        verificationBadge = `<span style="background: ${badgeColor}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; margin-left: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: inline-block;">&#10003; ${badgeIcon} ${badgeText}</span>`;
-      }
-      
-      infoPanel.innerHTML=`
-        <b>👤 ${spot.ownerName}</b>${verificationBadge}
-        <span class="distance-badge">📍 ${spot.distance || '?'} km away</span><br>
-        ${pricingDisplay}
-        <p style="font-size:12px;margin:8px 0;color:#666;">${spot.notes || 'No description'}</p>
-        <div style="display:flex;gap:6px;justify-content:center;margin:8px 0;flex-wrap:wrap;">
-          ${images}
-        </div>
-        <button class='book' onclick="preBook('${spot._id}', ${price})">Pre‑Book (₹${price}/hr)</button>
-        <button class='cancel' onclick="closeInfo()">Close</button>`;
-      infoPanel.style.display="block";
-    });
 }
 
 function closeInfo() {
