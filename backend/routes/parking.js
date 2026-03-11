@@ -20,7 +20,25 @@ router.post("/register", upload.array("images", 3), async (req, res) => {
   try {
     const { notes, ownerId, lat, lng, vehicleTypes, pricing, slots } = req.body;
 
-    const imagePaths = req.files.map(file => "/uploads/" + file.filename);
+    // Convert images to Base64 for permanent storage
+    const fs = require('fs');
+    const imageDataUrls = req.files.map(file => {
+      const imageBuffer = fs.readFileSync(file.path);
+      const base64Image = imageBuffer.toString('base64');
+      const mimeType = file.mimetype || 'image/jpeg';
+      const dataUrl = `data:${mimeType};base64,${base64Image}`;
+      
+      // Delete temporary file
+      try {
+        fs.unlinkSync(file.path);
+      } catch (err) {
+        console.log("Could not delete temp file:", err.message);
+      }
+      
+      return dataUrl;
+    });
+
+    console.log(`✅ Converted ${imageDataUrls.length} images to Base64 for permanent storage`);
 
     const parsedVehicleTypes = vehicleTypes ? JSON.parse(vehicleTypes) : ["car"];
     const parsedPricing = pricing ? JSON.parse(pricing) : {};
@@ -31,7 +49,7 @@ router.post("/register", upload.array("images", 3), async (req, res) => {
       pricing: parsedPricing,
       slots: parsedSlots,
       notes,
-      images: imagePaths,
+      images: imageDataUrls, // Store Base64 data URLs instead of file paths
       vehicleTypes: parsedVehicleTypes,
       location: {
         type: "Point",
