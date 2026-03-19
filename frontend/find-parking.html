@@ -95,6 +95,36 @@
       margin-top: 5px;
     }
 
+    .place-search-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .place-search-input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .place-search-input:focus {
+      border-color: #FFD400;
+    }
+
+    .place-go-btn {
+      padding: 10px 14px;
+      background: #FFD400;
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
     .panel {
       position: absolute;
       bottom: 0;
@@ -548,10 +578,14 @@
   <!-- Location Picker Overlay -->
   <div class="location-picker" id="locationPicker">
     <h3>📍 Set Your Location</h3>
-    <p>Drag the red marker to your desired location</p>
+    <p>Search a place or drag the red marker to your location</p>
+    <div class="place-search-row">
+      <input id="placeSearchInput" class="place-search-input" type="text" placeholder="Search city, area, landmark..." onkeydown="if(event.key==='Enter') searchPlace()">
+      <button class="place-go-btn" onclick="searchPlace()">🔍</button>
+    </div>
     <p id="selectedLocation">Lat: -, Lng: -</p>
     <button class="use-current-location" onclick="useCurrentLocation()">📍 Use My Current Location</button>
-    <button class="search-btn" onclick="searchNearbyParking()">🔍 Search Parking Within 5km</button>
+    <button class="search-btn" onclick="searchNearbyParking()">🅿️ Search Parking Within 5km</button>
   </div>
 
   <div id="map"></div>
@@ -684,6 +718,25 @@ window.initMap = function(){
     zoom: 14
   });
 
+  // Google Places Autocomplete on search input
+  const autocomplete = new google.maps.places.Autocomplete(
+    document.getElementById('placeSearchInput'),
+    { types: ['geocode', 'establishment'] }
+  );
+  autocomplete.addListener('place_changed', function() {
+    const place = autocomplete.getPlace();
+    if (!place.geometry) return;
+    const pos = {
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng()
+    };
+    map.setCenter(pos);
+    map.setZoom(15);
+    searchMarker.setPosition(pos);
+    userLocation = pos;
+    updateLocationDisplay();
+  });
+
   // Create draggable location marker with emoji
   searchMarker = new google.maps.Marker({
     position: defaultCenter,
@@ -739,6 +792,28 @@ function updateLocationDisplay() {
     document.getElementById('selectedLocation').innerText = 
       `Lat: ${userLocation.lat.toFixed(4)}, Lng: ${userLocation.lng.toFixed(4)}`;
   }
+}
+
+function searchPlace() {
+  const input = document.getElementById('placeSearchInput').value.trim();
+  if (!input) { alert("Please type a place to search"); return; }
+
+  const geocoder = new google.maps.Geocoder();
+  geocoder.geocode({ address: input }, function(results, status) {
+    if (status === 'OK' && results[0]) {
+      const pos = {
+        lat: results[0].geometry.location.lat(),
+        lng: results[0].geometry.location.lng()
+      };
+      map.setCenter(pos);
+      map.setZoom(15);
+      searchMarker.setPosition(pos);
+      userLocation = pos;
+      updateLocationDisplay();
+    } else {
+      alert("Place not found. Try a different search.");
+    }
+  });
 }
 
 function useCurrentLocation() {
@@ -1517,7 +1592,7 @@ function closeImageModal() {
 }
 </script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&callback=initMap" async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&libraries=places&callback=initMap" async defer></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 </body>
