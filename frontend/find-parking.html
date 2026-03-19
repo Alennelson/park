@@ -718,25 +718,6 @@ window.initMap = function(){
     zoom: 14
   });
 
-  // Google Places Autocomplete on search input
-  const autocomplete = new google.maps.places.Autocomplete(
-    document.getElementById('placeSearchInput'),
-    { types: ['geocode', 'establishment'] }
-  );
-  autocomplete.addListener('place_changed', function() {
-    const place = autocomplete.getPlace();
-    if (!place.geometry) return;
-    const pos = {
-      lat: place.geometry.location.lat(),
-      lng: place.geometry.location.lng()
-    };
-    map.setCenter(pos);
-    map.setZoom(15);
-    searchMarker.setPosition(pos);
-    userLocation = pos;
-    updateLocationDisplay();
-  });
-
   // Create draggable location marker with emoji
   searchMarker = new google.maps.Marker({
     position: defaultCenter,
@@ -798,22 +779,26 @@ function searchPlace() {
   const input = document.getElementById('placeSearchInput').value.trim();
   if (!input) { alert("Please type a place to search"); return; }
 
-  const geocoder = new google.maps.Geocoder();
-  geocoder.geocode({ address: input }, function(results, status) {
-    if (status === 'OK' && results[0]) {
-      const pos = {
-        lat: results[0].geometry.location.lat(),
-        lng: results[0].geometry.location.lng()
-      };
-      map.setCenter(pos);
-      map.setZoom(15);
-      searchMarker.setPosition(pos);
-      userLocation = pos;
-      updateLocationDisplay();
-    } else {
-      alert("Place not found. Try a different search.");
-    }
-  });
+  // Using OpenStreetMap Nominatim - free, no API key needed
+  fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(input)}&format=json&limit=1`)
+    .then(r => r.json())
+    .then(results => {
+      if (results && results.length > 0) {
+        const pos = {
+          lat: parseFloat(results[0].lat),
+          lng: parseFloat(results[0].lon)
+        };
+        map.setCenter(pos);
+        map.setZoom(15);
+        searchMarker.setPosition(pos);
+        userLocation = pos;
+        updateLocationDisplay();
+        document.getElementById('placeSearchInput').value = results[0].display_name.split(',').slice(0,2).join(',');
+      } else {
+        alert("Place not found. Try a more specific search (e.g. 'Kochi, Kerala').");
+      }
+    })
+    .catch(() => alert("Search failed. Check your internet connection."));
 }
 
 function useCurrentLocation() {
@@ -1592,7 +1577,7 @@ function closeImageModal() {
 }
 </script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&libraries=places&callback=initMap" async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzFgFejKDyyFfXqdOfaKmjPiAmXVHHZS4&callback=initMap" async defer></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 </body>
