@@ -345,8 +345,9 @@ const nodemailer = require('nodemailer');
 // In-memory OTP store: { email: { otp, expiresAt } }
 const otpStore = {};
 
-// Step 1: Send OTP via Gmail
+// Step 1: Send OTP via Brevo SMTP
 router.post("/forgot-password", async (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
   try {
     const { email } = req.body;
     if (!email) return res.json({ success: false, message: "Email is required" });
@@ -395,6 +396,7 @@ router.post("/forgot-password", async (req, res) => {
 
 // Step 2: Verify OTP and reset password
 router.post("/reset-password", async (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
   try {
     const { email, otp, newPassword } = req.body;
     if (!email || !otp || !newPassword) return res.json({ success: false, message: "All fields required" });
