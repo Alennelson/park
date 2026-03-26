@@ -341,72 +341,78 @@ router.post("/admin/ban-user/:userId", async (req, res) => {
   }
 });
 
-/* ================= FORGOT PASSWORD (Fast2SMS OTP) ================= */
+/* ================= FORGOT PASSWORD (Gmail OTP) ================= */
 
-// In-memory OTP store: { phone: { otp, expiresAt } }
+const nodemailer = require('nodemailer');
+
+// In-memory OTP store: { email: { otp, expiresAt } }
 const otpStore = {};
 
-// Step 1: Send OTP via Fast2SMS
+// Step 1: Send OTP via Gmail
 router.post("/forgot-password", async (req, res) => {
   try {
-    const { phone } = req.body;
-    if (!phone) return res.json({ success: false, message: "Phone number is required" });
+    const { email } = req.body;
+    if (!email) return res.json({ success: false, message: "Email is required" });
 
-    const user = await User.findOne({ phone });
-    if (!user) return res.json({ success: false, message: "No account found with this phone number" });
+    const user = await User.findOne({ email });
+    if (!user) return res.json({ success: false, message: "No account found with this email" });
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    otpStore[phone] = { otp, expiresAt: Date.now() + 10 * 60 * 1000 };
+    otpStore[email] = { otp, expiresAt: Date.now() + 10 * 60 * 1000 };
 
-    const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
-      method: "POST",
-      headers: {
-        "authorization": process.env.FAST2SMS_API_KEY,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        route: "q",
-        message: `Your ASP password reset OTP is: ${otp}. Valid for 10 minutes. Do not share with anyone.`,
-        language: "english",
-        flash: 0,
-        numbers: phone
-      })
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
     });
 
-    const result = await response.json();
-    console.log("Fast2SMS response:", result);
+    await transporter.sendMail({
+      from: `"ASP - A Space for Park" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "ASP Password Reset OTP",
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:420px;margin:auto;padding:30px;background:#fff;border-radius:12px;border:2px solid #FFD400;">
+          <h2 style="text-align:center;color:#000;">&#128663; ASP Password Reset</h2>
+          <p>Hi <b>${user.name}</b>,</p>
+          <p>Use the OTP below to reset your password. It expires in <b>10 minutes</b>.</p>
+          <div style="text-align:center;margin:25px 0;">
+            <span style="font-size:38px;font-weight:bold;letter-spacing:12px;background:#FFD400;padding:15px 25px;border-radius:10px;">${otp}</span>
+          </div>
+          <p style="color:#999;font-size:12px;text-align:center;">If you did not request this, ignore this email.</p>
+          <p style="color:#999;font-size:12px;text-align:center;">— ASP Team</p>
+        </div>
+      `
+    });
 
-    if (!result.return) {
-      return res.json({ success: false, message: "Failed to send OTP. Please try again." });
-    }
-
-    console.log(`OTP sent to ${phone}`);
-    res.json({ success: true, message: "OTP sent to your phone number" });
+    console.log(`OTP sent to ${email}`);
+    res.json({ success: true, message: "OTP sent to your email" });
   } catch (err) {
-    console.error("Forgot password error:", err);
-    res.json({ success: false, message: "Server error. Please try again." });
+    console.error("Forgot password error:", err.message);
+    res.json({ success: false, message: "Failed to send OTP. Please try again." });
   }
 });
 
 // Step 2: Verify OTP and reset password
 router.post("/reset-password", async (req, res) => {
   try {
-    const { phone, otp, newPassword } = req.body;
-    if (!phone || !otp || !newPassword) return res.json({ success: false, message: "All fields required" });
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) return res.json({ success: false, message: "All fields required" });
 
-    const record = otpStore[phone];
-    if (!record) return res.json({ success: false, message: "No OTP requested for this number" });
+    const record = otpStore[email];
+    if (!record) return res.json({ success: false, message: "No OTP requested for this email" });
     if (Date.now() > record.expiresAt) {
-      delete otpStore[phone];
+      delete otpStore[email];
       return res.json({ success: false, message: "OTP expired. Please request a new one." });
     }
     if (record.otp !== otp) return res.json({ success: false, message: "Invalid OTP" });
 
     const hash = await bcrypt.hash(newPassword, 10);
-    await User.findOneAndUpdate({ phone }, { password: hash });
-    delete otpStore[phone];
+    await User.findOneAndUpdate({ email }, { password: hash });
+    delete otpStore[email];
 
-    console.log(`Password reset for phone: ${phone}`);
+    console.log(`Password reset for: ${email}`);
     res.json({ success: true, message: "Password reset successfully! You can now login." });
   } catch (err) {
     console.error("Reset password error:", err);

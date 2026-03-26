@@ -678,8 +678,8 @@
     <div style="background:white;border-radius:16px;padding:20px;width:85%;max-width:280px;">
       <h3 style="margin:0 0 12px;font-size:16px;">Reset Password</h3>
       <div id="fpStep1">
-        <p style="font-size:12px;color:#666;margin:0 0 10px;">Enter your registered phone number to receive an OTP via SMS.</p>
-        <input id="fpPhone" type="tel" maxlength="10" placeholder="10-digit phone number" style="width:100%;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:10px;box-sizing:border-box;">
+        <p style="font-size:12px;color:#666;margin:0 0 10px;">Enter your registered email to receive an OTP.</p>
+        <input id="fpEmail" type="email" placeholder="Your email address" style="width:100%;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:10px;box-sizing:border-box;">
         <button onclick="sendOtp()" style="width:100%;padding:10px;background:#FFD400;color:#000;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">Send OTP</button>
       </div>
       <div id="fpStep2" style="display:none;">
@@ -798,21 +798,21 @@ function hideForgotPassword() {
 }
 
 function sendOtp() {
-  const phone = document.getElementById('fpPhone').value.trim();
-  if (!phone || phone.length !== 10) {
-    alert("Please enter a valid 10-digit phone number");
+  const email = document.getElementById('fpEmail').value.trim();
+  if (!email || !email.includes('@')) {
+    alert("Please enter a valid email address");
     return;
   }
 
   fetch(getApiUrl('/api/auth/forgot-password'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone })
+    body: JSON.stringify({ email })
   })
   .then(r => r.json())
   .then(data => {
     if (data.success) {
-      alert('OTP sent to your phone!');
+      alert('OTP sent to your email! Check your inbox.');
       document.getElementById('fpStep1').style.display = 'none';
       document.getElementById('fpStep2').style.display = 'block';
     } else {
@@ -823,7 +823,7 @@ function sendOtp() {
 }
 
 function resetPassword() {
-  const phone = document.getElementById('fpPhone').value.trim();
+  const email = document.getElementById('fpEmail').value.trim();
   const otp = document.getElementById('fpOtp').value.trim();
   const newPassword = document.getElementById('fpNewPass').value.trim();
 
@@ -833,7 +833,7 @@ function resetPassword() {
   fetch(getApiUrl('/api/auth/reset-password'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, otp, newPassword })
+    body: JSON.stringify({ email, otp, newPassword })
   })
   .then(r => r.json())
   .then(data => {
@@ -861,6 +861,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </body>
 </html>
+
 
 
 
