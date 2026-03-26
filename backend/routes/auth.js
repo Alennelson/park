@@ -193,9 +193,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-module.exports = router;
-
-
 /* ================= ADMIN ENDPOINTS ================= */
 
 // Get all pending verifications
