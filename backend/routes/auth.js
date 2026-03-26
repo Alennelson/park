@@ -365,8 +365,10 @@ router.post("/forgot-password", async (req, res) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        route: "otp",
-        variables_values: otp,
+        route: "q",
+        message: `Your ASP password reset OTP is: ${otp}. Valid for 10 minutes. Do not share with anyone.`,
+        language: "english",
+        flash: 0,
         numbers: phone
       })
     });

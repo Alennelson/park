@@ -174,16 +174,45 @@
 
     .cloud {
       position: absolute;
-      font-size: 2em;
       animation: cloudMove 20s linear infinite;
     }
 
     .cloud1 { top: 20px; animation-duration: 25s; }
-    .cloud2 { top: 60px; animation-duration: 30s; }
-    .cloud3 { top: 40px; animation-duration: 35s; }
+    .cloud2 { top: 55px; animation-duration: 32s; }
+    .cloud3 { top: 35px; animation-duration: 38s; }
+
+    /* CSS cloud shape */
+    .cloud-shape {
+      position: relative;
+      width: 80px;
+      height: 28px;
+      background: white;
+      border-radius: 20px;
+      opacity: 0.85;
+    }
+    .cloud-shape::before {
+      content: '';
+      position: absolute;
+      top: -14px;
+      left: 12px;
+      width: 32px;
+      height: 32px;
+      background: white;
+      border-radius: 50%;
+    }
+    .cloud-shape::after {
+      content: '';
+      position: absolute;
+      top: -20px;
+      left: 32px;
+      width: 42px;
+      height: 42px;
+      background: white;
+      border-radius: 50%;
+    }
 
     @keyframes cloudMove {
-      0% { transform: translateX(-100px); }
+      0% { transform: translateX(-120px); }
       100% { transform: translateX(100vw); }
     }
 
@@ -428,19 +457,48 @@
 
 
 
-    /* Trees - BIGGER SIZE */
+    /* Trees - CSS drawn */
     .trees-container {
       position: absolute;
       bottom: 100px;
       width: 200%;
       display: flex;
-      gap: 120px;
+      gap: 80px;
+      align-items: flex-end;
       animation: treesMove 6s linear infinite;
     }
 
     .tree {
-      font-size: 5em; /* Increased from 3em to 5em */
-      filter: brightness(0.8) drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .tree-top {
+      width: 0;
+      height: 0;
+      border-left: 28px solid transparent;
+      border-right: 28px solid transparent;
+      border-bottom: 55px solid #2d6a2d;
+      filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3));
+    }
+
+    .tree-top2 {
+      width: 0;
+      height: 0;
+      border-left: 22px solid transparent;
+      border-right: 22px solid transparent;
+      border-bottom: 44px solid #3a8a3a;
+      margin-top: -20px;
+      filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3));
+    }
+
+    .tree-trunk {
+      width: 10px;
+      height: 16px;
+      background: #6B4226;
+      border-radius: 2px;
     }
 
     @keyframes treesMove {
@@ -468,8 +526,10 @@
         height: 35px;
       }
 
-      .tree {
-        font-size: 3.5em; /* Bigger on mobile too */
+      .tree-top {
+        border-left-width: 22px;
+        border-right-width: 22px;
+        border-bottom-width: 44px;
       }
 
       .sun {
@@ -493,7 +553,10 @@
 
     <!-- Sky with clouds -->
     <div class="sky">
-      <div class="cloud cloud1">â˜ï¸</div>
+      <div class="cloud cloud1"><div class="cloud-shape"></div></div>
+      <div class="cloud cloud2"><div class="cloud-shape"></div></div>
+      <div class="cloud cloud3"><div class="cloud-shape"></div></div>
+    </div>
       <div class="cloud cloud2">â˜ï¸</div>
       <div class="cloud cloud3">â˜ï¸</div>
     </div>
@@ -572,15 +635,16 @@
       </div>
     </div>
 
-    <!-- Trees passing by - BIGGER TREES -->
+    <!-- Trees -->
     <div class="trees-container">
-      <div class="tree">ðŸŒ²</div>
-      <div class="tree">ðŸŒ³</div>
-      <div class="tree">ðŸŒ²</div>
-      <div class="tree">ðŸŒ³</div>
-      <div class="tree">ðŸŒ²</div>
-      <div class="tree">ðŸŒ³</div>
+      <div class="tree"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
+      <div class="tree"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
+      <div class="tree"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
+      <div class="tree"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
+      <div class="tree"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
+      <div class="tree"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -797,4 +861,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </body>
 </html>
+
+
 
