@@ -341,6 +341,77 @@ router.post("/admin/ban-user/:userId", async (req, res) => {
   }
 });
 
+/* ================= FORGOT PASSWORD (Fast2SMS OTP) ================= */
+
+// In-memory OTP store: { phone: { otp, expiresAt } }
+const otpStore = {};
+
+// Step 1: Send OTP via Fast2SMS
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) return res.json({ success: false, message: "Phone number is required" });
+
+    const user = await User.findOne({ phone });
+    if (!user) return res.json({ success: false, message: "No account found with this phone number" });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore[phone] = { otp, expiresAt: Date.now() + 10 * 60 * 1000 };
+
+    const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+      method: "POST",
+      headers: {
+        "authorization": process.env.FAST2SMS_API_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        route: "otp",
+        variables_values: otp,
+        numbers: phone
+      })
+    });
+
+    const result = await response.json();
+    console.log("Fast2SMS response:", result);
+
+    if (!result.return) {
+      return res.json({ success: false, message: "Failed to send OTP. Please try again." });
+    }
+
+    console.log(`OTP sent to ${phone}`);
+    res.json({ success: true, message: "OTP sent to your phone number" });
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    res.json({ success: false, message: "Server error. Please try again." });
+  }
+});
+
+// Step 2: Verify OTP and reset password
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { phone, otp, newPassword } = req.body;
+    if (!phone || !otp || !newPassword) return res.json({ success: false, message: "All fields required" });
+
+    const record = otpStore[phone];
+    if (!record) return res.json({ success: false, message: "No OTP requested for this number" });
+    if (Date.now() > record.expiresAt) {
+      delete otpStore[phone];
+      return res.json({ success: false, message: "OTP expired. Please request a new one." });
+    }
+    if (record.otp !== otp) return res.json({ success: false, message: "Invalid OTP" });
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    await User.findOneAndUpdate({ phone }, { password: hash });
+    delete otpStore[phone];
+
+    console.log(`Password reset for phone: ${phone}`);
+    res.json({ success: true, message: "Password reset successfully! You can now login." });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.json({ success: false, message: "Server error" });
+  }
+});
+
 // Delete user
 router.delete("/admin/delete-user/:userId", async (req, res) => {
   try {

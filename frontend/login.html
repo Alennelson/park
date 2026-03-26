@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -485,7 +485,7 @@
 
 <!-- Loading Animation Overlay -->
 <div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-text">⚙️ Setting up your dashboard...</div>
+  <div class="loading-text">âš™ï¸ Setting up your dashboard...</div>
   
   <div class="scene-container">
     <!-- Sun -->
@@ -493,9 +493,9 @@
 
     <!-- Sky with clouds -->
     <div class="sky">
-      <div class="cloud cloud1">☁️</div>
-      <div class="cloud cloud2">☁️</div>
-      <div class="cloud cloud3">☁️</div>
+      <div class="cloud cloud1">â˜ï¸</div>
+      <div class="cloud cloud2">â˜ï¸</div>
+      <div class="cloud cloud3">â˜ï¸</div>
     </div>
 
     <!-- Mountains in background -->
@@ -574,12 +574,12 @@
 
     <!-- Trees passing by - BIGGER TREES -->
     <div class="trees-container">
-      <div class="tree">🌲</div>
-      <div class="tree">🌳</div>
-      <div class="tree">🌲</div>
-      <div class="tree">🌳</div>
-      <div class="tree">🌲</div>
-      <div class="tree">🌳</div>
+      <div class="tree">ðŸŒ²</div>
+      <div class="tree">ðŸŒ³</div>
+      <div class="tree">ðŸŒ²</div>
+      <div class="tree">ðŸŒ³</div>
+      <div class="tree">ðŸŒ²</div>
+      <div class="tree">ðŸŒ³</div>
     </div>
   </div>
 </div>
@@ -600,7 +600,7 @@
 
     <!-- REGISTER OPTION -->
     <div class="register-box">
-      <span>Don’t have an account?</span>
+      <span>Donâ€™t have an account?</span>
       <button onclick="goRegister()">Create new account</button>
     </div>
   </div>
@@ -649,14 +649,14 @@ function login() {
       const banMessage = data.banReason || 'Your account has been banned by admin due to policy violations';
       const bannedDate = data.bannedAt ? new Date(data.bannedAt).toLocaleDateString() : '';
       
-      alert(`⛔ ACCOUNT BANNED\n\n${banMessage}\n\n${bannedDate ? `Banned on: ${bannedDate}\n\n` : ''}Your parking spaces have been removed and you can no longer access ASP services.\n\nIf you believe this is a mistake, please contact ASP support at support@asp.com`);
+      alert(`â›” ACCOUNT BANNED\n\n${banMessage}\n\n${bannedDate ? `Banned on: ${bannedDate}\n\n` : ''}Your parking spaces have been removed and you can no longer access ASP services.\n\nIf you believe this is a mistake, please contact ASP support at support@asp.com`);
       return;
     }
 
     // Check if verification is pending
     if (data.pending || data.error === "VERIFICATION_PENDING") {
       document.getElementById("loadingOverlay").classList.remove("active");
-      alert('⏳ ACCOUNT PENDING VERIFICATION\n\nYour account is currently under review by our admin team.\n\nYou will be able to login once your ID proof is verified. This usually takes 24-48 hours.\n\nThank you for your patience!');
+      alert('â³ ACCOUNT PENDING VERIFICATION\n\nYour account is currently under review by our admin team.\n\nYou will be able to login once your ID proof is verified. This usually takes 24-48 hours.\n\nThank you for your patience!');
       return;
     }
 
@@ -664,7 +664,7 @@ function login() {
     if (data.rejected || data.error === "VERIFICATION_REJECTED") {
       document.getElementById("loadingOverlay").classList.remove("active");
       const rejectionReason = data.rejectionReason || 'Your account verification was rejected by admin';
-      alert(`❌ ACCOUNT VERIFICATION REJECTED\n\n${rejectionReason}\n\nYour account cannot be activated. Please contact ASP support at support@asp.com for more information or to appeal this decision.`);
+      alert(`âŒ ACCOUNT VERIFICATION REJECTED\n\n${rejectionReason}\n\nYour account cannot be activated. Please contact ASP support at support@asp.com for more information or to appeal this decision.`);
       return;
     }
 
@@ -695,9 +695,69 @@ function login() {
   });
 }
 
-/* ⭐ ADD THIS FUNCTION */
+/* â­ ADD THIS FUNCTION */
 function goRegister() {
   window.location.href = "register.html";
+}
+
+function showForgotPassword() {
+  document.getElementById('forgotOverlay').style.display = 'flex';
+  document.getElementById('fpStep1').style.display = 'block';
+  document.getElementById('fpStep2').style.display = 'none';
+}
+
+function hideForgotPassword() {
+  document.getElementById('forgotOverlay').style.display = 'none';
+}
+
+function sendOtp() {
+  const phone = document.getElementById('fpPhone').value.trim();
+  if (!phone || phone.length !== 10) {
+    alert("Please enter a valid 10-digit phone number");
+    return;
+  }
+
+  fetch(getApiUrl('/api/auth/forgot-password'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      alert('OTP sent to your phone!');
+      document.getElementById('fpStep1').style.display = 'none';
+      document.getElementById('fpStep2').style.display = 'block';
+    } else {
+      alert(data.message || 'Failed to send OTP');
+    }
+  })
+  .catch(() => alert('Server error. Please try again.'));
+}
+
+function resetPassword() {
+  const phone = document.getElementById('fpPhone').value.trim();
+  const otp = document.getElementById('fpOtp').value.trim();
+  const newPassword = document.getElementById('fpNewPass').value.trim();
+
+  if (!otp || otp.length !== 6) { alert("Enter the 6-digit OTP"); return; }
+  if (!newPassword || newPassword.length < 6) { alert("Password must be at least 6 characters"); return; }
+
+  fetch(getApiUrl('/api/auth/reset-password'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, otp, newPassword })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      alert('Password reset successfully! Please login with your new password.');
+      hideForgotPassword();
+    } else {
+      alert(data.message || 'Failed to reset password');
+    }
+  })
+  .catch(() => alert('Server error. Please try again.'));
 }
 
 // Allow Enter key to submit
@@ -714,3 +774,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </body>
 </html>
+
