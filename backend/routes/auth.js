@@ -358,33 +358,40 @@ router.post("/forgot-password", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[email] = { otp, expiresAt: Date.now() + 10 * 60 * 1000 };
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp-relay.brevo.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,       // your Brevo login email
-        pass: process.env.BREVO_SMTP_KEY    // Brevo SMTP key (not your password)
-      }
+    // Send via Brevo HTTP API (works on Render free tier - no SMTP port blocking)
+    const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: { name: 'ASP - A Space for Park', email: process.env.EMAIL_USER },
+        to: [{ email: email, name: user.name }],
+        subject: 'ASP Password Reset OTP',
+        htmlContent: `
+          <div style="font-family:Arial,sans-serif;max-width:420px;margin:auto;padding:30px;background:#fff;border-radius:12px;border:2px solid #FFD400;">
+            <h2 style="text-align:center;color:#000;">ASP Password Reset</h2>
+            <p>Hi <b>${user.name}</b>,</p>
+            <p>Use the OTP below to reset your password. It expires in <b>10 minutes</b>.</p>
+            <div style="text-align:center;margin:25px 0;">
+              <span style="font-size:38px;font-weight:bold;letter-spacing:12px;background:#FFD400;padding:15px 25px;border-radius:10px;">${otp}</span>
+            </div>
+            <p style="color:#999;font-size:12px;text-align:center;">If you did not request this, ignore this email.</p>
+            <p style="color:#999;font-size:12px;text-align:center;">— ASP Team</p>
+          </div>
+        `
+      })
     });
 
-    await transporter.sendMail({
-      from: `"ASP - A Space for Park" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "ASP Password Reset OTP",
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:420px;margin:auto;padding:30px;background:#fff;border-radius:12px;border:2px solid #FFD400;">
-          <h2 style="text-align:center;color:#000;">&#128663; ASP Password Reset</h2>
-          <p>Hi <b>${user.name}</b>,</p>
-          <p>Use the OTP below to reset your password. It expires in <b>10 minutes</b>.</p>
-          <div style="text-align:center;margin:25px 0;">
-            <span style="font-size:38px;font-weight:bold;letter-spacing:12px;background:#FFD400;padding:15px 25px;border-radius:10px;">${otp}</span>
-          </div>
-          <p style="color:#999;font-size:12px;text-align:center;">If you did not request this, ignore this email.</p>
-          <p style="color:#999;font-size:12px;text-align:center;">— ASP Team</p>
-        </div>
-      `
-    });
+    const brevoData = await brevoRes.json();
+    console.log('Brevo API response:', brevoData);
+
+    if (!brevoRes.ok) {
+      console.error('Brevo error:', brevoData);
+      return res.json({ success: false, message: 'Failed to send OTP. Please try again.' });
+    }
 
     console.log(`OTP sent to ${email}`);
     res.json({ success: true, message: "OTP sent to your email" });
