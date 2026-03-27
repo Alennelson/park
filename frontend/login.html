@@ -662,8 +662,8 @@
 
     <button onclick="login()">Login</button>
 
-    <div style="text-align:right;margin-top:-8px;margin-bottom:8px;">
-      <a href="#" onclick="showForgotPassword()" style="font-size:12px;color:#333;text-decoration:underline;">Forgot Password?</a>
+    <div style="text-align:right;margin-top:6px;margin-bottom:10px;">
+      <a href="#" onclick="showForgotPassword()" style="font-size:12px;color:#555;text-decoration:none;background:rgba(0,0,0,0.08);padding:5px 12px;border-radius:20px;font-weight:600;letter-spacing:0.3px;transition:background 0.2s;">&#128273; Forgot Password?</a>
     </div>
 
     <!-- REGISTER OPTION -->
@@ -674,21 +674,31 @@
   </div>
 
   <!-- FORGOT PASSWORD OVERLAY -->
-  <div id="forgotOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.6);z-index:500;justify-content:center;align-items:center;">
-    <div style="background:white;border-radius:16px;padding:20px;width:85%;max-width:280px;">
-      <h3 style="margin:0 0 12px;font-size:16px;">Reset Password</h3>
+  <div id="forgotOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:500;justify-content:center;align-items:center;backdrop-filter:blur(2px);">
+    <div style="background:white;border-radius:20px;padding:24px 20px 16px;width:88%;max-width:290px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      
+      <!-- Header -->
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="width:48px;height:48px;background:#FFD400;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:22px;">&#128273;</div>
+        <h3 style="margin:0;font-size:17px;font-weight:700;color:#111;">Reset Password</h3>
+      </div>
+
+      <!-- Step 1 -->
       <div id="fpStep1">
-        <p style="font-size:12px;color:#666;margin:0 0 10px;">Enter your registered email to receive an OTP.</p>
-        <input id="fpEmail" type="email" placeholder="Your email address" style="width:100%;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:10px;box-sizing:border-box;">
-        <button onclick="sendOtp()" style="width:100%;padding:10px;background:#FFD400;color:#000;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">Send OTP</button>
+        <p style="font-size:12px;color:#888;margin:0 0 12px;text-align:center;">Enter your registered email and we'll send you an OTP.</p>
+        <input id="fpEmail" type="email" placeholder="Your email address" style="width:100%;padding:11px 14px;border:2px solid #eee;border-radius:10px;font-size:14px;margin-bottom:12px;box-sizing:border-box;outline:none;">
+        <button onclick="sendOtp()" style="width:100%;padding:12px;background:#FFD400;color:#000;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:0.3px;">Send OTP to Email</button>
       </div>
+
+      <!-- Step 2 -->
       <div id="fpStep2" style="display:none;">
-        <p style="font-size:12px;color:#666;margin:0 0 10px;">Enter the OTP sent to your phone and set a new password.</p>
-        <input id="fpOtp" type="text" maxlength="6" placeholder="6-digit OTP" style="width:100%;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:20px;letter-spacing:8px;text-align:center;margin-bottom:10px;box-sizing:border-box;">
-        <input id="fpNewPass" type="password" placeholder="New password" style="width:100%;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:10px;box-sizing:border-box;">
-        <button onclick="resetPassword()" style="width:100%;padding:10px;background:#4CAF50;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">Reset Password</button>
+        <p style="font-size:12px;color:#888;margin:0 0 12px;text-align:center;">Check your inbox and enter the 6-digit OTP.</p>
+        <input id="fpOtp" type="text" maxlength="6" placeholder="0 0 0 0 0 0" style="width:100%;padding:12px;border:2px solid #FFD400;border-radius:10px;font-size:22px;letter-spacing:10px;text-align:center;margin-bottom:10px;box-sizing:border-box;font-weight:700;outline:none;">
+        <input id="fpNewPass" type="password" placeholder="New password (min 6 chars)" style="width:100%;padding:11px 14px;border:2px solid #eee;border-radius:10px;font-size:14px;margin-bottom:12px;box-sizing:border-box;outline:none;">
+        <button onclick="resetPassword()" style="width:100%;padding:12px;background:#111;color:white;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;">Set New Password</button>
       </div>
-      <button onclick="hideForgotPassword()" style="width:100%;padding:8px;background:transparent;color:#999;border:none;font-size:13px;cursor:pointer;margin-top:8px;">Cancel</button>
+
+      <button onclick="hideForgotPassword()" style="width:100%;padding:8px;background:transparent;color:#bbb;border:none;font-size:12px;cursor:pointer;margin-top:10px;">Cancel</button>
     </div>
   </div>
 
