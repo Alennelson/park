@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo:8
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  backend:
+    build: .
+    container_name: asp-backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/parkify
+    depends_on:
+      - mongodb
+
+volumes:
+  mongodb_data:
